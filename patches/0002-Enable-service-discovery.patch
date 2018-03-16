@@ -1,0 +1,408 @@
+From 88850f94d0b81385c119a83ad734da18bca6ab0a Mon Sep 17 00:00:00 2001
+From: Tyson Gern <tgern@pivotal.io>
+Date: Thu, 6 Jul 2017 16:57:30 -0600
+Subject: [PATCH 2/5] Enable service discovery
+
+---
+ .../main/java/io/pivotal/pal/tracker/allocations/App.java  |  2 ++
+ .../src/main/resources/application.properties              |  4 +++-
+ .../src/test/resources/application.properties              |  4 +++-
+ .../src/main/java/io/pivotal/pal/tracker/backlog/App.java  |  2 ++
+ .../src/main/resources/application.properties              |  4 +++-
+ .../src/test/resources/application.properties              |  4 +++-
+ .../main/java/io/pivotal/pal/tracker/registration/App.java |  2 ++
+ .../src/main/resources/application.properties              |  4 +++-
+ .../src/test/resources/application.properties              |  4 +++-
+ applications/server.gradle                                 |  9 +++++++++
+ .../main/java/io/pivotal/pal/tracker/timesheets/App.java   |  2 ++
+ .../src/main/resources/application.properties              |  4 +++-
+ .../src/test/resources/application.properties              |  4 +++-
+ build.gradle                                               |  2 ++
+ components/rest-support/build.gradle                       |  1 +
+ .../io/pivotal/pal/tracker/restsupport/RestConfig.java     |  2 ++
+ .../pivotal/pal/tracker/support/ApplicationServer.java     |  5 +++--
+ manifest-allocations.yml                                   |  3 +--
+ manifest-backlog.yml                                       |  3 +--
+ manifest-registration.yml                                  |  1 +
+ manifest-timesheets.yml                                    |  3 +--
+ platform-services/eureka-server/build.gradle               | 14 ++++++++++++++
+ .../main/java/io/pivotal/pal/tracker/eurekaserver/App.java | 14 ++++++++++++++
+ .../src/main/resources/application.properties              |  2 ++
+ settings.gradle                                            |  2 ++
+ 25 files changed, 85 insertions(+), 16 deletions(-)
+ create mode 100644 platform-services/eureka-server/build.gradle
+ create mode 100644 platform-services/eureka-server/src/main/java/io/pivotal/pal/tracker/eurekaserver/App.java
+ create mode 100644 platform-services/eureka-server/src/main/resources/application.properties
+
+diff --git a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
+index b034229..916a458 100644
+--- a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
++++ b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
+@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker.allocations;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+ import org.springframework.web.client.RestOperations;
+@@ -10,6 +11,7 @@ import org.springframework.web.client.RestOperations;
+ import java.util.TimeZone;
+ 
+ 
++@EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({"io.pivotal.pal.tracker.allocations", "io.pivotal.pal.tracker.restsupport"})
+ public class App {
+diff --git a/applications/allocations-server/src/main/resources/application.properties b/applications/allocations-server/src/main/resources/application.properties
+index 57cbd07..25345c2 100644
+--- a/applications/allocations-server/src/main/resources/application.properties
++++ b/applications/allocations-server/src/main/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=allocations-server
+ server.port=8081
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8083
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/allocations-server/src/test/resources/application.properties b/applications/allocations-server/src/test/resources/application.properties
+index 9d25a30..8f936ec 100644
+--- a/applications/allocations-server/src/test/resources/application.properties
++++ b/applications/allocations-server/src/test/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=allocations-server
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8883
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
+index 832ff65..23d1c1d 100644
+--- a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
++++ b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
+@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker.backlog;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+ import org.springframework.web.client.RestOperations;
+@@ -10,6 +11,7 @@ import org.springframework.web.client.RestOperations;
+ import java.util.TimeZone;
+ 
+ 
++@EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({"io.pivotal.pal.tracker.backlog", "io.pivotal.pal.tracker.restsupport"})
+ public class App {
+diff --git a/applications/backlog-server/src/main/resources/application.properties b/applications/backlog-server/src/main/resources/application.properties
+index 8ea7201..2d4285a 100644
+--- a/applications/backlog-server/src/main/resources/application.properties
++++ b/applications/backlog-server/src/main/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=backlog-server
+ server.port=8082
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8083
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/backlog-server/src/test/resources/application.properties b/applications/backlog-server/src/test/resources/application.properties
+index 8b43acf..d1919e2 100644
+--- a/applications/backlog-server/src/test/resources/application.properties
++++ b/applications/backlog-server/src/test/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=backlog-server
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8883
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java
+index c66e337..3c7e1ce 100644
+--- a/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java
++++ b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java
+@@ -2,11 +2,13 @@ package io.pivotal.pal.tracker.registration;
+ 
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.ComponentScan;
+ 
+ import java.util.TimeZone;
+ 
+ 
++@EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({
+     "io.pivotal.pal.tracker.accounts",
+diff --git a/applications/registration-server/src/main/resources/application.properties b/applications/registration-server/src/main/resources/application.properties
+index ff88e76..f694d56 100644
+--- a/applications/registration-server/src/main/resources/application.properties
++++ b/applications/registration-server/src/main/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=registration-server
+ server.port=8083
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8083
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/registration-server/src/test/resources/application.properties b/applications/registration-server/src/test/resources/application.properties
+index ff6f375..b5c41e5 100644
+--- a/applications/registration-server/src/test/resources/application.properties
++++ b/applications/registration-server/src/test/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=registration-server
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8883
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/server.gradle b/applications/server.gradle
+index 8d81724..2e1222a 100644
+--- a/applications/server.gradle
++++ b/applications/server.gradle
+@@ -1,9 +1,18 @@
+ apply plugin: "org.springframework.boot"
++apply plugin: "io.spring.dependency-management"
++
++dependencyManagement {
++    imports {
++        mavenBom "io.pivotal.spring.cloud:spring-cloud-services-dependencies:$springCloudServicesVersion"
++    }
++}
+ 
+ dependencies {
+     compile project(":components:rest-support")
+ 
+     compile "org.springframework.boot:spring-boot-starter-web"
++    compile "org.springframework.boot:spring-boot-starter-actuator"
++    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
+ 
+     compile "com.zaxxer:HikariCP:2.3.7"
+     compile "mysql:mysql-connector-java:$mysqlVersion"
+diff --git a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
+index 9df368a..77ab671 100644
+--- a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
++++ b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
+@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker.timesheets;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+ import org.springframework.web.client.RestOperations;
+@@ -10,6 +11,7 @@ import org.springframework.web.client.RestOperations;
+ import java.util.TimeZone;
+ 
+ 
++@EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({"io.pivotal.pal.tracker.timesheets", "io.pivotal.pal.tracker.restsupport"})
+ public class App {
+diff --git a/applications/timesheets-server/src/main/resources/application.properties b/applications/timesheets-server/src/main/resources/application.properties
+index 606bf9d..a5f6df5 100644
+--- a/applications/timesheets-server/src/main/resources/application.properties
++++ b/applications/timesheets-server/src/main/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=timesheets-server
+ server.port=8084
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8083
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/applications/timesheets-server/src/test/resources/application.properties b/applications/timesheets-server/src/test/resources/application.properties
+index 928f52e..d641a85 100644
+--- a/applications/timesheets-server/src/test/resources/application.properties
++++ b/applications/timesheets-server/src/test/resources/application.properties
+@@ -3,4 +3,6 @@ spring.application.name=timesheets-server
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://localhost:8883
++registration.server.endpoint=http://registration-server
++security.basic.enabled=false
++management.security.enabled=false
+diff --git a/build.gradle b/build.gradle
+index 3a35394..6af7cb2 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -5,6 +5,8 @@ buildscript {
+         springBootVersion = "1.5.7.RELEASE"
+         springVersion = "4.3.8.RELEASE"
+         mysqlVersion = "6.0.6"
++        springCloudDependenciesVersion = "Edgware.RELEASE"
++        springCloudServicesVersion = "1.6.0.RELEASE"
+     }
+ 
+     repositories {
+diff --git a/components/rest-support/build.gradle b/components/rest-support/build.gradle
+index fd70427..ecbffc8 100644
+--- a/components/rest-support/build.gradle
++++ b/components/rest-support/build.gradle
+@@ -1,3 +1,4 @@
+ dependencies {
+     compile "org.springframework:spring-web:$springVersion"
++    compile "org.springframework.cloud:spring-cloud-commons:1.1.6.RELEASE"
+ }
+diff --git a/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java b/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java
+index 3120f4c..8fbbc01 100644
+--- a/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java
++++ b/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java
+@@ -2,6 +2,7 @@ package io.pivotal.pal.tracker.restsupport;
+ 
+ import com.fasterxml.jackson.databind.DeserializationFeature;
+ import com.fasterxml.jackson.databind.ObjectMapper;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.Configuration;
+ import org.springframework.web.client.RestOperations;
+@@ -12,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
+ public class RestConfig {
+ 
+     @Bean
++    @LoadBalanced
+     public RestOperations restOperations() {
+         return new RestTemplate();
+     }
+diff --git a/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java b/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
+index 023b1b8..34a7550 100644
+--- a/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
++++ b/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
+@@ -37,7 +37,9 @@ public class ApplicationServer {
+ 
+         start(envMapBuilder()
+             .put("SPRING_DATASOURCE_URL", dbUrl)
+-            .put("REGISTRATION_SERVER_ENDPOINT", "http://localhost:8883")
++            .put("EUREKA_CLIENT_ENABLED", "false")
++            .put("RIBBON_EUREKA_ENABLED", "false")
++            .put("REGISTRATION_SERVER_RIBBON_LISTOFSERVERS", "http://localhost:8883")
+             .build()
+         );
+     }
+@@ -46,7 +48,6 @@ public class ApplicationServer {
+         serverProcess.destroyForcibly();
+     }
+ 
+-
+     public static void waitOnPorts(String... ports) throws InterruptedException {
+         for (String port : ports) waitUntilServerIsUp(port);
+     }
+diff --git a/manifest-allocations.yml b/manifest-allocations.yml
+index ab477c5..7645118 100644
+--- a/manifest-allocations.yml
++++ b/manifest-allocations.yml
+@@ -4,7 +4,6 @@ applications:
+   host: allocations-pal-INITIALS
+   memory: 1G
+   instances: 1
+-  env:
+-    REGISTRATION_SERVER_ENDPOINT: http://FILL_ME_IN
+   services:
+   - tracker-allocations-database
++  - tracker-service-registry
+diff --git a/manifest-backlog.yml b/manifest-backlog.yml
+index ec2da78..b07ba4b 100644
+--- a/manifest-backlog.yml
++++ b/manifest-backlog.yml
+@@ -4,7 +4,6 @@ applications:
+   host: backlog-pal-INITIALS
+   memory: 1G
+   instances: 1
+-  env:
+-    REGISTRATION_SERVER_ENDPOINT: http://FILL_ME_IN
+   services:
+   - tracker-backlog-database
++  - tracker-service-registry
+diff --git a/manifest-registration.yml b/manifest-registration.yml
+index 140f533..9174c14 100644
+--- a/manifest-registration.yml
++++ b/manifest-registration.yml
+@@ -6,3 +6,4 @@ applications:
+   instances: 1
+   services:
+   - tracker-registration-database
++  - tracker-service-registry
+diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
+index f98b92a..26245bc 100644
+--- a/manifest-timesheets.yml
++++ b/manifest-timesheets.yml
+@@ -4,7 +4,6 @@ applications:
+   host: timesheets-pal-INITIALS
+   memory: 1G
+   instances: 1
+-  env:
+-    REGISTRATION_SERVER_ENDPOINT: http://FILL_ME_IN
+   services:
+   - tracker-timesheets-database
++  - tracker-service-registry
+diff --git a/platform-services/eureka-server/build.gradle b/platform-services/eureka-server/build.gradle
+new file mode 100644
+index 0000000..ff14f55
+--- /dev/null
++++ b/platform-services/eureka-server/build.gradle
+@@ -0,0 +1,14 @@
++apply plugin: "org.springframework.boot"
++apply plugin: "io.spring.dependency-management"
++
++dependencyManagement {
++    imports {
++        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudDependenciesVersion"
++    }
++}
++
++dependencies {
++    compile "org.springframework.boot:spring-boot-starter-web"
++    compile "org.springframework.cloud:spring-cloud-starter-eureka-server"
++
++}
+\ No newline at end of file
+diff --git a/platform-services/eureka-server/src/main/java/io/pivotal/pal/tracker/eurekaserver/App.java b/platform-services/eureka-server/src/main/java/io/pivotal/pal/tracker/eurekaserver/App.java
+new file mode 100644
+index 0000000..d591a19
+--- /dev/null
++++ b/platform-services/eureka-server/src/main/java/io/pivotal/pal/tracker/eurekaserver/App.java
+@@ -0,0 +1,14 @@
++package io.pivotal.pal.tracker.eurekaserver;
++
++import org.springframework.boot.SpringApplication;
++import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
++
++@EnableEurekaServer
++@SpringBootApplication
++public class App {
++
++    public static void main(String[] args) {
++        SpringApplication.run(App.class, args);
++    }
++}
+diff --git a/platform-services/eureka-server/src/main/resources/application.properties b/platform-services/eureka-server/src/main/resources/application.properties
+new file mode 100644
+index 0000000..699417a
+--- /dev/null
++++ b/platform-services/eureka-server/src/main/resources/application.properties
+@@ -0,0 +1,2 @@
++spring.application.name=eureka-server
++server.port=8761
+diff --git a/settings.gradle b/settings.gradle
+index 307ee44..41bd5c8 100644
+--- a/settings.gradle
++++ b/settings.gradle
+@@ -21,3 +21,5 @@ include "databases:registration-database"
+ include "databases:timesheets-database"
+ 
+ include "integration-test"
++
++include "platform-services:eureka-server"
+-- 
+2.12.3
+

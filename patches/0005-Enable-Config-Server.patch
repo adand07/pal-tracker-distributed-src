@@ -1,0 +1,272 @@
+From 528aa0d123709010626e3613e9c51fe97752bc9d Mon Sep 17 00:00:00 2001
+From: Tyson Gern <tgern@pivotal.io>
+Date: Sun, 9 Jul 2017 09:41:13 -0600
+Subject: [PATCH 5/5] Enable Config Server
+
+---
+ .../allocations-server/src/main/resources/application.properties    | 3 ---
+ .../allocations-server/src/main/resources/bootstrap.properties      | 1 +
+ .../allocations-server/src/test/resources/application.properties    | 3 ---
+ .../backlog-server/src/main/resources/application.properties        | 3 ---
+ applications/backlog-server/src/main/resources/bootstrap.properties | 1 +
+ .../backlog-server/src/test/resources/application.properties        | 3 ---
+ .../registration-server/src/main/resources/application.properties   | 3 ---
+ .../registration-server/src/main/resources/bootstrap.properties     | 1 +
+ .../registration-server/src/test/resources/application.properties   | 3 ---
+ applications/server.gradle                                          | 6 ++++++
+ .../timesheets-server/src/main/resources/application.properties     | 3 ---
+ .../timesheets-server/src/main/resources/bootstrap.properties       | 1 +
+ .../timesheets-server/src/test/resources/application.properties     | 3 ---
+ .../java/test/pivotal/pal/tracker/support/ApplicationServer.java    | 1 +
+ manifest-allocations.yml                                            | 3 +--
+ manifest-backlog.yml                                                | 3 +--
+ manifest-registration.yml                                           | 3 +--
+ manifest-timesheets.yml                                             | 3 +--
+ 18 files changed, 15 insertions(+), 32 deletions(-)
+ create mode 100644 applications/allocations-server/src/main/resources/bootstrap.properties
+ create mode 100644 applications/backlog-server/src/main/resources/bootstrap.properties
+ create mode 100644 applications/registration-server/src/main/resources/bootstrap.properties
+ create mode 100644 applications/timesheets-server/src/main/resources/bootstrap.properties
+
+diff --git a/applications/allocations-server/src/main/resources/application.properties b/applications/allocations-server/src/main/resources/application.properties
+index 00291e4..95d1f9f 100644
+--- a/applications/allocations-server/src/main/resources/application.properties
++++ b/applications/allocations-server/src/main/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=allocations-server
+-
+ server.port=8081
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
+ security.oauth2.client.access-token-uri=http://localhost:8999/oauth/token
+ security.oauth2.client.grant-type=client_credentials
+diff --git a/applications/allocations-server/src/main/resources/bootstrap.properties b/applications/allocations-server/src/main/resources/bootstrap.properties
+new file mode 100644
+index 0000000..0ba7b57
+--- /dev/null
++++ b/applications/allocations-server/src/main/resources/bootstrap.properties
+@@ -0,0 +1 @@
++spring.application.name=allocations-server
+diff --git a/applications/allocations-server/src/test/resources/application.properties b/applications/allocations-server/src/test/resources/application.properties
+index df6417c..dd5fc2f 100644
+--- a/applications/allocations-server/src/test/resources/application.properties
++++ b/applications/allocations-server/src/test/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=allocations-server
+-
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
+ application.oauth-enabled=false
+diff --git a/applications/backlog-server/src/main/resources/application.properties b/applications/backlog-server/src/main/resources/application.properties
+index 70ee83a..be69165 100644
+--- a/applications/backlog-server/src/main/resources/application.properties
++++ b/applications/backlog-server/src/main/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=backlog-server
+-
+ server.port=8082
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
+ security.oauth2.client.access-token-uri=http://localhost:8999/oauth/token
+ security.oauth2.client.grant-type=client_credentials
+diff --git a/applications/backlog-server/src/main/resources/bootstrap.properties b/applications/backlog-server/src/main/resources/bootstrap.properties
+new file mode 100644
+index 0000000..049dc22
+--- /dev/null
++++ b/applications/backlog-server/src/main/resources/bootstrap.properties
+@@ -0,0 +1 @@
++spring.application.name=backlog-server
+diff --git a/applications/backlog-server/src/test/resources/application.properties b/applications/backlog-server/src/test/resources/application.properties
+index 3fd4449..bdad5c9 100644
+--- a/applications/backlog-server/src/test/resources/application.properties
++++ b/applications/backlog-server/src/test/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=backlog-server
+-
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
+ application.oauth-enabled=false
+diff --git a/applications/registration-server/src/main/resources/application.properties b/applications/registration-server/src/main/resources/application.properties
+index 3a50df9..0f20b5e 100644
+--- a/applications/registration-server/src/main/resources/application.properties
++++ b/applications/registration-server/src/main/resources/application.properties
+@@ -1,8 +1,5 @@
+-spring.application.name=registration-server
+-
+ server.port=8083
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
+ hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/registration-server/src/main/resources/bootstrap.properties b/applications/registration-server/src/main/resources/bootstrap.properties
+new file mode 100644
+index 0000000..3882353
+--- /dev/null
++++ b/applications/registration-server/src/main/resources/bootstrap.properties
+@@ -0,0 +1 @@
++spring.application.name=registration-server
+diff --git a/applications/registration-server/src/test/resources/application.properties b/applications/registration-server/src/test/resources/application.properties
+index ef75701..ca162a2 100644
+--- a/applications/registration-server/src/test/resources/application.properties
++++ b/applications/registration-server/src/test/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=registration-server
+-
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
+ application.oauth-enabled=false
+diff --git a/applications/server.gradle b/applications/server.gradle
+index 7855703..d71f90e 100644
+--- a/applications/server.gradle
++++ b/applications/server.gradle
+@@ -16,6 +16,7 @@ dependencies {
+     compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
+     compile "org.springframework.cloud:spring-cloud-starter-oauth2"
+     compile "io.pivotal.spring.cloud:spring-cloud-sso-connector:$springCloudSsoVersion"
++    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-config-client"
+ 
+     compile "com.zaxxer:HikariCP:2.3.7"
+     compile "mysql:mysql-connector-java:$mysqlVersion"
+@@ -28,6 +29,11 @@ bootRun.environment([
+     "APPLICATION_OAUTH_ENABLED": true,
+     "SECURITY_OAUTH2_CLIENT_CLIENT_ID": "tracker-client",
+     "SECURITY_OAUTH2_CLIENT_CLIENT_SECRET": "supersecret",
++    "REGISTRATION_SERVER_ENDPOINT": "http://registration-server",
+     "SECURITY_USER_NAME": "actuator",
+     "SECURITY_USER_PASSWORD": "operations4red"
+ ])
++
++test.environment([
++    "REGISTRATION_SERVER_ENDPOINT": "http://registration-server",
++])
+diff --git a/applications/timesheets-server/src/main/resources/application.properties b/applications/timesheets-server/src/main/resources/application.properties
+index ebf9298..81ba0fc 100644
+--- a/applications/timesheets-server/src/main/resources/application.properties
++++ b/applications/timesheets-server/src/main/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=timesheets-server
+-
+ server.port=8084
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
+ security.oauth2.client.access-token-uri=http://localhost:8999/oauth/token
+ security.oauth2.client.grant-type=client_credentials
+diff --git a/applications/timesheets-server/src/main/resources/bootstrap.properties b/applications/timesheets-server/src/main/resources/bootstrap.properties
+new file mode 100644
+index 0000000..a83b808
+--- /dev/null
++++ b/applications/timesheets-server/src/main/resources/bootstrap.properties
+@@ -0,0 +1 @@
++spring.application.name=timesheets-server
+diff --git a/applications/timesheets-server/src/test/resources/application.properties b/applications/timesheets-server/src/test/resources/application.properties
+index 4f12788..81de90e 100644
+--- a/applications/timesheets-server/src/test/resources/application.properties
++++ b/applications/timesheets-server/src/test/resources/application.properties
+@@ -1,9 +1,6 @@
+-spring.application.name=timesheets-server
+-
+ server.port=8181
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_test?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+-registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
+ application.oauth-enabled=false
+diff --git a/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java b/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
+index 73324da..9c829f4 100644
+--- a/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
++++ b/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
+@@ -41,6 +41,7 @@ public class ApplicationServer {
+             .put("RIBBON_EUREKA_ENABLED", "false")
+             .put("REGISTRATION_SERVER_RIBBON_LISTOFSERVERS", "http://localhost:8883")
+             .put("APPLICATION_OAUTH_ENABLED", "false")
++            .put("REGISTRATION_SERVER_ENDPOINT", "http://registration-server")
+             .build()
+         );
+     }
+diff --git a/manifest-allocations.yml b/manifest-allocations.yml
+index 68751cd..ae3ca49 100644
+--- a/manifest-allocations.yml
++++ b/manifest-allocations.yml
+@@ -6,10 +6,9 @@ applications:
+   instances: 1
+   env:
+     GRANT_TYPE: client_credentials
+-    SECURITY_USER_NAME: actuator
+-    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-allocations-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
+   - tracker-sso
++  - tracker-config-server
+diff --git a/manifest-backlog.yml b/manifest-backlog.yml
+index a3a2647..904e479 100644
+--- a/manifest-backlog.yml
++++ b/manifest-backlog.yml
+@@ -6,10 +6,9 @@ applications:
+   instances: 1
+   env:
+     GRANT_TYPE: client_credentials
+-    SECURITY_USER_NAME: actuator
+-    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-backlog-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
+   - tracker-sso
++  - tracker-config-server
+diff --git a/manifest-registration.yml b/manifest-registration.yml
+index bdf115d..f5873f5 100644
+--- a/manifest-registration.yml
++++ b/manifest-registration.yml
+@@ -6,10 +6,9 @@ applications:
+   instances: 1
+   env:
+     GRANT_TYPE: client_credentials
+-    SECURITY_USER_NAME: actuator
+-    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-registration-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
+   - tracker-sso
++  - tracker-config-server
+diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
+index 088c093..ca2ae19 100644
+--- a/manifest-timesheets.yml
++++ b/manifest-timesheets.yml
+@@ -6,10 +6,9 @@ applications:
+   instances: 1
+   env:
+     GRANT_TYPE: client_credentials
+-    SECURITY_USER_NAME: actuator
+-    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-timesheets-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
+   - tracker-sso
++  - tracker-config-server
+-- 
+2.12.3
+

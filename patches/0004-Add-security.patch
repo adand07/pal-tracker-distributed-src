@@ -1,0 +1,739 @@
+From 420cbe56f14a0fe70f81e028fe8db01edd7aaf6f Mon Sep 17 00:00:00 2001
+From: Tyson Gern <tgern@pivotal.io>
+Date: Fri, 7 Jul 2017 16:24:52 -0600
+Subject: [PATCH 4/5] Add security
+
+---
+ .../io/pivotal/pal/tracker/allocations/App.java    |  4 +++
+ .../allocations/NoOauthResourceServerConfig.java   | 26 ++++++++++++++++
+ .../allocations/OauthResourceServerConfig.java     | 36 ++++++++++++++++++++++
+ .../src/main/resources/application.properties      |  5 +--
+ .../src/test/resources/application.properties      |  1 +
+ .../java/io/pivotal/pal/tracker/backlog/App.java   |  4 +++
+ .../backlog/NoOauthResourceServerConfig.java       | 26 ++++++++++++++++
+ .../tracker/backlog/OauthResourceServerConfig.java | 36 ++++++++++++++++++++++
+ .../src/main/resources/application.properties      |  5 +--
+ .../src/test/resources/application.properties      |  1 +
+ .../io/pivotal/pal/tracker/registration/App.java   |  7 ++++-
+ .../registration/NoOauthResourceServerConfig.java  | 16 ++++++++++
+ .../registration/OauthResourceServerConfig.java    | 24 +++++++++++++++
+ .../src/main/resources/application.properties      |  3 +-
+ .../src/test/resources/application.properties      |  1 +
+ applications/server.gradle                         | 10 ++++++
+ .../io/pivotal/pal/tracker/timesheets/App.java     |  4 +++
+ .../timesheets/NoOauthResourceServerConfig.java    | 26 ++++++++++++++++
+ .../timesheets/OauthResourceServerConfig.java      | 36 ++++++++++++++++++++++
+ .../src/main/resources/application.properties      |  5 +--
+ .../src/test/resources/application.properties      |  1 +
+ build.gradle                                       |  1 +
+ .../pal/tracker/restsupport/RestConfig.java        |  9 ------
+ .../pal/tracker/support/ApplicationServer.java     |  1 +
+ manifest-allocations.yml                           |  5 +++
+ manifest-backlog.yml                               |  5 +++
+ manifest-registration.yml                          |  5 +++
+ manifest-timesheets.yml                            |  5 +++
+ platform-services/oauth-server/build.gradle        |  7 +++++
+ .../io/pivotal/pal/tracker/oauthserver/App.java    | 15 +++++++++
+ .../pal/tracker/oauthserver/SecurityConfig.java    | 29 +++++++++++++++++
+ .../src/main/resources/application.properties      |  2 ++
+ settings.gradle                                    |  1 +
+ 33 files changed, 344 insertions(+), 18 deletions(-)
+ create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/NoOauthResourceServerConfig.java
+ create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/OauthResourceServerConfig.java
+ create mode 100644 applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/NoOauthResourceServerConfig.java
+ create mode 100644 applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/OauthResourceServerConfig.java
+ create mode 100644 applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/NoOauthResourceServerConfig.java
+ create mode 100644 applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/OauthResourceServerConfig.java
+ create mode 100644 applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/NoOauthResourceServerConfig.java
+ create mode 100644 applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/OauthResourceServerConfig.java
+ create mode 100644 platform-services/oauth-server/build.gradle
+ create mode 100644 platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/App.java
+ create mode 100644 platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/SecurityConfig.java
+ create mode 100644 platform-services/oauth-server/src/main/resources/application.properties
+
+diff --git a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
+index 7afd701..1ba12da 100644
+--- a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
++++ b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
+@@ -7,11 +7,15 @@ import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
++import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+ import org.springframework.web.client.RestOperations;
+ 
+ import java.util.TimeZone;
+ 
+ 
++@EnableWebSecurity
++@EnableResourceServer
+ @EnableCircuitBreaker
+ @EnableEurekaClient
+ @SpringBootApplication
+diff --git a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/NoOauthResourceServerConfig.java b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/NoOauthResourceServerConfig.java
+new file mode 100644
+index 0000000..e5ba30f
+--- /dev/null
++++ b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/NoOauthResourceServerConfig.java
+@@ -0,0 +1,26 @@
++package io.pivotal.pal.tracker.allocations;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.web.client.RestOperations;
++import org.springframework.web.client.RestTemplate;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", havingValue = "false")
++public class NoOauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        http.authorizeRequests().anyRequest().permitAll();
++    }
++
++    @Bean
++    @LoadBalanced
++    public RestOperations restOperations() {
++        return new RestTemplate();
++    }
++}
+diff --git a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/OauthResourceServerConfig.java b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/OauthResourceServerConfig.java
+new file mode 100644
+index 0000000..3245096
+--- /dev/null
++++ b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/OauthResourceServerConfig.java
+@@ -0,0 +1,36 @@
++package io.pivotal.pal.tracker.allocations;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.client.OAuth2ClientContext;
++import org.springframework.security.oauth2.client.OAuth2RestTemplate;
++import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
++import org.springframework.web.client.RestOperations;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", matchIfMissing = true)
++public class OauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Bean
++    @LoadBalanced
++    public RestOperations restTemplate(OAuth2ProtectedResourceDetails resource, OAuth2ClientContext oauth2ClientContext) {
++        return new OAuth2RestTemplate(resource, oauth2ClientContext);
++    }
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        // enforce authentication on our API endpoints.
++        http.authorizeRequests().anyRequest().authenticated();
++    }
++
++    @Override
++    public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
++        // do not require a resource id in AccessToken.
++        resources.resourceId(null);
++    }
++}
+diff --git a/applications/allocations-server/src/main/resources/application.properties b/applications/allocations-server/src/main/resources/application.properties
+index 8d2da10..00291e4 100644
+--- a/applications/allocations-server/src/main/resources/application.properties
++++ b/applications/allocations-server/src/main/resources/application.properties
+@@ -4,6 +4,7 @@ server.port=8081
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+ registration.server.endpoint=http://registration-server
+-security.basic.enabled=false
+-management.security.enabled=false
++security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
++security.oauth2.client.access-token-uri=http://localhost:8999/oauth/token
++security.oauth2.client.grant-type=client_credentials
+ hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/allocations-server/src/test/resources/application.properties b/applications/allocations-server/src/test/resources/application.properties
+index 8f936ec..df6417c 100644
+--- a/applications/allocations-server/src/test/resources/application.properties
++++ b/applications/allocations-server/src/test/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_test?useSS
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++application.oauth-enabled=false
+diff --git a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
+index a9b1d27..c9febc8 100644
+--- a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
++++ b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
+@@ -7,11 +7,15 @@ import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
++import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+ import org.springframework.web.client.RestOperations;
+ 
+ import java.util.TimeZone;
+ 
+ 
++@EnableWebSecurity
++@EnableResourceServer
+ @EnableCircuitBreaker
+ @EnableEurekaClient
+ @SpringBootApplication
+diff --git a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/NoOauthResourceServerConfig.java b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/NoOauthResourceServerConfig.java
+new file mode 100644
+index 0000000..5596733
+--- /dev/null
++++ b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/NoOauthResourceServerConfig.java
+@@ -0,0 +1,26 @@
++package io.pivotal.pal.tracker.backlog;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.web.client.RestOperations;
++import org.springframework.web.client.RestTemplate;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", havingValue = "false")
++public class NoOauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        http.authorizeRequests().anyRequest().permitAll();
++    }
++
++    @Bean
++    @LoadBalanced
++    public RestOperations restOperations() {
++        return new RestTemplate();
++    }
++}
+diff --git a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/OauthResourceServerConfig.java b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/OauthResourceServerConfig.java
+new file mode 100644
+index 0000000..30e01f5
+--- /dev/null
++++ b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/OauthResourceServerConfig.java
+@@ -0,0 +1,36 @@
++package io.pivotal.pal.tracker.backlog;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.client.OAuth2ClientContext;
++import org.springframework.security.oauth2.client.OAuth2RestTemplate;
++import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
++import org.springframework.web.client.RestOperations;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", matchIfMissing = true)
++public class OauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Bean
++    @LoadBalanced
++    public RestOperations restTemplate(OAuth2ProtectedResourceDetails resource, OAuth2ClientContext oauth2ClientContext) {
++        return new OAuth2RestTemplate(resource, oauth2ClientContext);
++    }
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        // enforce authentication on our API endpoints.
++        http.authorizeRequests().anyRequest().authenticated();
++    }
++
++    @Override
++    public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
++        // do not require a resource id in AccessToken.
++        resources.resourceId(null);
++    }
++}
+diff --git a/applications/backlog-server/src/main/resources/application.properties b/applications/backlog-server/src/main/resources/application.properties
+index eef3eaf..70ee83a 100644
+--- a/applications/backlog-server/src/main/resources/application.properties
++++ b/applications/backlog-server/src/main/resources/application.properties
+@@ -4,6 +4,7 @@ server.port=8082
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+ registration.server.endpoint=http://registration-server
+-security.basic.enabled=false
+-management.security.enabled=false
++security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
++security.oauth2.client.access-token-uri=http://localhost:8999/oauth/token
++security.oauth2.client.grant-type=client_credentials
+ hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/backlog-server/src/test/resources/application.properties b/applications/backlog-server/src/test/resources/application.properties
+index d1919e2..3fd4449 100644
+--- a/applications/backlog-server/src/test/resources/application.properties
++++ b/applications/backlog-server/src/test/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_test?useSSL=fa
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++application.oauth-enabled=false
+diff --git a/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java
+index 3c7e1ce..6c35871 100644
+--- a/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java
++++ b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/App.java
+@@ -4,17 +4,22 @@ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.ComponentScan;
++import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+ 
+ import java.util.TimeZone;
+ 
+ 
++@EnableWebSecurity
++@EnableResourceServer
+ @EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({
+     "io.pivotal.pal.tracker.accounts",
+     "io.pivotal.pal.tracker.restsupport",
+     "io.pivotal.pal.tracker.projects",
+-    "io.pivotal.pal.tracker.users"
++    "io.pivotal.pal.tracker.users",
++    "io.pivotal.pal.tracker.registration"
+ })
+ public class App {
+     public static void main(String[] args) {
+diff --git a/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/NoOauthResourceServerConfig.java b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/NoOauthResourceServerConfig.java
+new file mode 100644
+index 0000000..a56c592
+--- /dev/null
++++ b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/NoOauthResourceServerConfig.java
+@@ -0,0 +1,16 @@
++package io.pivotal.pal.tracker.registration;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", havingValue = "false")
++public class NoOauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        http.authorizeRequests().anyRequest().permitAll();
++    }
++}
+diff --git a/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/OauthResourceServerConfig.java b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/OauthResourceServerConfig.java
+new file mode 100644
+index 0000000..0ca7b29
+--- /dev/null
++++ b/applications/registration-server/src/main/java/io/pivotal/pal/tracker/registration/OauthResourceServerConfig.java
+@@ -0,0 +1,24 @@
++package io.pivotal.pal.tracker.registration;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", matchIfMissing = true)
++public class OauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        // enforce authentication on our API endpoints.
++        http.authorizeRequests().anyRequest().authenticated();
++    }
++
++    @Override
++    public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
++        // do not require a resource id in AccessToken.
++        resources.resourceId(null);
++    }
++}
+diff --git a/applications/registration-server/src/main/resources/application.properties b/applications/registration-server/src/main/resources/application.properties
+index a5b41ec..3a50df9 100644
+--- a/applications/registration-server/src/main/resources/application.properties
++++ b/applications/registration-server/src/main/resources/application.properties
+@@ -4,6 +4,5 @@ server.port=8083
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+ registration.server.endpoint=http://registration-server
+-security.basic.enabled=false
+-management.security.enabled=false
++security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
+ hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/registration-server/src/test/resources/application.properties b/applications/registration-server/src/test/resources/application.properties
+index b5c41e5..ef75701 100644
+--- a/applications/registration-server/src/test/resources/application.properties
++++ b/applications/registration-server/src/test/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_test?useS
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++application.oauth-enabled=false
+diff --git a/applications/server.gradle b/applications/server.gradle
+index 929d6a5..7855703 100644
+--- a/applications/server.gradle
++++ b/applications/server.gradle
+@@ -14,6 +14,8 @@ dependencies {
+     compile "org.springframework.boot:spring-boot-starter-actuator"
+     compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
+     compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
++    compile "org.springframework.cloud:spring-cloud-starter-oauth2"
++    compile "io.pivotal.spring.cloud:spring-cloud-sso-connector:$springCloudSsoVersion"
+ 
+     compile "com.zaxxer:HikariCP:2.3.7"
+     compile "mysql:mysql-connector-java:$mysqlVersion"
+@@ -21,3 +23,11 @@ dependencies {
+ 
+     testCompile project(":components:test-support")
+ }
++
++bootRun.environment([
++    "APPLICATION_OAUTH_ENABLED": true,
++    "SECURITY_OAUTH2_CLIENT_CLIENT_ID": "tracker-client",
++    "SECURITY_OAUTH2_CLIENT_CLIENT_SECRET": "supersecret",
++    "SECURITY_USER_NAME": "actuator",
++    "SECURITY_USER_PASSWORD": "operations4red"
++])
+diff --git a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
+index b709f6a..f3ca50a 100644
+--- a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
++++ b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
+@@ -7,11 +7,15 @@ import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
++import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
+ import org.springframework.web.client.RestOperations;
+ 
+ import java.util.TimeZone;
+ 
+ 
++@EnableWebSecurity
++@EnableResourceServer
+ @EnableCircuitBreaker
+ @EnableEurekaClient
+ @SpringBootApplication
+diff --git a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/NoOauthResourceServerConfig.java b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/NoOauthResourceServerConfig.java
+new file mode 100644
+index 0000000..c6af38f
+--- /dev/null
++++ b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/NoOauthResourceServerConfig.java
+@@ -0,0 +1,26 @@
++package io.pivotal.pal.tracker.timesheets;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.web.client.RestOperations;
++import org.springframework.web.client.RestTemplate;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", havingValue = "false")
++public class NoOauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        http.authorizeRequests().anyRequest().permitAll();
++    }
++
++    @Bean
++    @LoadBalanced
++    public RestOperations restOperations() {
++        return new RestTemplate();
++    }
++}
+diff --git a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/OauthResourceServerConfig.java b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/OauthResourceServerConfig.java
+new file mode 100644
+index 0000000..2095752
+--- /dev/null
++++ b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/OauthResourceServerConfig.java
+@@ -0,0 +1,36 @@
++package io.pivotal.pal.tracker.timesheets;
++
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.cloud.client.loadbalancer.LoadBalanced;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.oauth2.client.OAuth2ClientContext;
++import org.springframework.security.oauth2.client.OAuth2RestTemplate;
++import org.springframework.security.oauth2.client.resource.OAuth2ProtectedResourceDetails;
++import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
++import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
++import org.springframework.web.client.RestOperations;
++
++@Configuration
++@ConditionalOnProperty(value = "application.oauth-enabled", matchIfMissing = true)
++public class OauthResourceServerConfig extends ResourceServerConfigurerAdapter {
++
++    @Bean
++    @LoadBalanced
++    public RestOperations restTemplate(OAuth2ProtectedResourceDetails resource, OAuth2ClientContext oauth2ClientContext) {
++        return new OAuth2RestTemplate(resource, oauth2ClientContext);
++    }
++
++    @Override
++    public void configure(HttpSecurity http) throws Exception {
++        // enforce authentication on our API endpoints.
++        http.authorizeRequests().anyRequest().authenticated();
++    }
++
++    @Override
++    public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
++        // do not require a resource id in AccessToken.
++        resources.resourceId(null);
++    }
++}
+diff --git a/applications/timesheets-server/src/main/resources/application.properties b/applications/timesheets-server/src/main/resources/application.properties
+index 166c628..ebf9298 100644
+--- a/applications/timesheets-server/src/main/resources/application.properties
++++ b/applications/timesheets-server/src/main/resources/application.properties
+@@ -4,6 +4,7 @@ server.port=8084
+ spring.datasource.username=tracker
+ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+ registration.server.endpoint=http://registration-server
+-security.basic.enabled=false
+-management.security.enabled=false
++security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
++security.oauth2.client.access-token-uri=http://localhost:8999/oauth/token
++security.oauth2.client.grant-type=client_credentials
+ hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/timesheets-server/src/test/resources/application.properties b/applications/timesheets-server/src/test/resources/application.properties
+index d641a85..4f12788 100644
+--- a/applications/timesheets-server/src/test/resources/application.properties
++++ b/applications/timesheets-server/src/test/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_test?useSSL
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++application.oauth-enabled=false
+diff --git a/build.gradle b/build.gradle
+index 6af7cb2..548f475 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -7,6 +7,7 @@ buildscript {
+         mysqlVersion = "6.0.6"
+         springCloudDependenciesVersion = "Edgware.RELEASE"
+         springCloudServicesVersion = "1.6.0.RELEASE"
++        springCloudSsoVersion = "1.1.0.RELEASE"
+     }
+ 
+     repositories {
+diff --git a/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java b/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java
+index 8fbbc01..9d5d768 100644
+--- a/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java
++++ b/components/rest-support/src/main/java/io/pivotal/pal/tracker/restsupport/RestConfig.java
+@@ -2,23 +2,14 @@ package io.pivotal.pal.tracker.restsupport;
+ 
+ import com.fasterxml.jackson.databind.DeserializationFeature;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+-import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.Configuration;
+-import org.springframework.web.client.RestOperations;
+-import org.springframework.web.client.RestTemplate;
+ 
+ 
+ @Configuration
+ public class RestConfig {
+ 
+     @Bean
+-    @LoadBalanced
+-    public RestOperations restOperations() {
+-        return new RestTemplate();
+-    }
+-
+-    @Bean
+     public ObjectMapper objectMapper() {
+         ObjectMapper mapper = new ObjectMapper();
+         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+diff --git a/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java b/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
+index 34a7550..73324da 100644
+--- a/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
++++ b/integration-test/src/test/java/test/pivotal/pal/tracker/support/ApplicationServer.java
+@@ -40,6 +40,7 @@ public class ApplicationServer {
+             .put("EUREKA_CLIENT_ENABLED", "false")
+             .put("RIBBON_EUREKA_ENABLED", "false")
+             .put("REGISTRATION_SERVER_RIBBON_LISTOFSERVERS", "http://localhost:8883")
++            .put("APPLICATION_OAUTH_ENABLED", "false")
+             .build()
+         );
+     }
+diff --git a/manifest-allocations.yml b/manifest-allocations.yml
+index dadeaf0..68751cd 100644
+--- a/manifest-allocations.yml
++++ b/manifest-allocations.yml
+@@ -4,7 +4,12 @@ applications:
+   host: allocations-pal-INITIALS
+   memory: 1G
+   instances: 1
++  env:
++    GRANT_TYPE: client_credentials
++    SECURITY_USER_NAME: actuator
++    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-allocations-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
++  - tracker-sso
+diff --git a/manifest-backlog.yml b/manifest-backlog.yml
+index 6a0935b..a3a2647 100644
+--- a/manifest-backlog.yml
++++ b/manifest-backlog.yml
+@@ -4,7 +4,12 @@ applications:
+   host: backlog-pal-INITIALS
+   memory: 1G
+   instances: 1
++  env:
++    GRANT_TYPE: client_credentials
++    SECURITY_USER_NAME: actuator
++    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-backlog-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
++  - tracker-sso
+diff --git a/manifest-registration.yml b/manifest-registration.yml
+index 37a71e4..bdf115d 100644
+--- a/manifest-registration.yml
++++ b/manifest-registration.yml
+@@ -4,7 +4,12 @@ applications:
+   host: registration-pal-INITIALS
+   memory: 1G
+   instances: 1
++  env:
++    GRANT_TYPE: client_credentials
++    SECURITY_USER_NAME: actuator
++    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-registration-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
++  - tracker-sso
+diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
+index f7de4f7..088c093 100644
+--- a/manifest-timesheets.yml
++++ b/manifest-timesheets.yml
+@@ -4,7 +4,12 @@ applications:
+   host: timesheets-pal-INITIALS
+   memory: 1G
+   instances: 1
++  env:
++    GRANT_TYPE: client_credentials
++    SECURITY_USER_NAME: actuator
++    SECURITY_USER_PASSWORD: operations4red
+   services:
+   - tracker-timesheets-database
+   - tracker-service-registry
+   - tracker-circuit-breaker-dashboard
++  - tracker-sso
+diff --git a/platform-services/oauth-server/build.gradle b/platform-services/oauth-server/build.gradle
+new file mode 100644
+index 0000000..566abfe
+--- /dev/null
++++ b/platform-services/oauth-server/build.gradle
+@@ -0,0 +1,7 @@
++apply plugin: "org.springframework.boot"
++
++dependencies {
++    compile "org.springframework.boot:spring-boot-starter-web"
++    compile "org.springframework.boot:spring-boot-starter-security"
++    compile "org.springframework.security.oauth:spring-security-oauth2"
++}
+diff --git a/platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/App.java b/platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/App.java
+new file mode 100644
+index 0000000..0d0a5a1
+--- /dev/null
++++ b/platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/App.java
+@@ -0,0 +1,15 @@
++package io.pivotal.pal.tracker.oauthserver;
++
++import org.springframework.boot.SpringApplication;
++import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.context.annotation.ComponentScan;
++import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
++
++@SpringBootApplication
++@ComponentScan("io.pivotal.pal.tracker.oauthserver")
++public class App extends AuthorizationServerConfigurerAdapter {
++
++    public static void main(String[] args) {
++        SpringApplication.run(App.class, args);
++    }
++}
+diff --git a/platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/SecurityConfig.java b/platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/SecurityConfig.java
+new file mode 100644
+index 0000000..b5ec721
+--- /dev/null
++++ b/platform-services/oauth-server/src/main/java/io/pivotal/pal/tracker/oauthserver/SecurityConfig.java
+@@ -0,0 +1,29 @@
++package io.pivotal.pal.tracker.oauthserver;
++
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
++import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
++import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
++import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
++
++@Configuration
++@EnableAuthorizationServer
++public class SecurityConfig extends AuthorizationServerConfigurerAdapter {
++
++    @Override
++    public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
++        clients.inMemory()
++            .withClient("tracker-client")
++            .secret("supersecret")
++            .authorizedGrantTypes("client_credentials")
++            .scopes("openid");
++    }
++
++    @Override
++    public void configure(AuthorizationServerSecurityConfigurer oauthServer)
++        throws Exception {
++        oauthServer
++            .tokenKeyAccess("permitAll()")
++            .checkTokenAccess("isAuthenticated()");
++    }
++}
+diff --git a/platform-services/oauth-server/src/main/resources/application.properties b/platform-services/oauth-server/src/main/resources/application.properties
+new file mode 100644
+index 0000000..8bf9ef0
+--- /dev/null
++++ b/platform-services/oauth-server/src/main/resources/application.properties
+@@ -0,0 +1,2 @@
++server.application.name=oauth-server
++server.port=8999
+diff --git a/settings.gradle b/settings.gradle
+index 41bd5c8..f05b0b5 100644
+--- a/settings.gradle
++++ b/settings.gradle
+@@ -23,3 +23,4 @@ include "databases:timesheets-database"
+ include "integration-test"
+ 
+ include "platform-services:eureka-server"
++include "platform-services:oauth-server"
+-- 
+2.12.3
+

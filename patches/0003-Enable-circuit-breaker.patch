@@ -1,0 +1,336 @@
+From fe77bfc058ac575166f0a260be509adc81e04374 Mon Sep 17 00:00:00 2001
+From: Tyson Gern <tgern@pivotal.io>
+Date: Fri, 7 Jul 2017 09:52:54 -0600
+Subject: [PATCH 3/5] Enable circuit breaker
+
+---
+ .../io/pivotal/pal/tracker/allocations/App.java    |  2 ++
+ .../src/main/resources/application.properties      |  1 +
+ .../java/io/pivotal/pal/tracker/backlog/App.java   |  2 ++
+ .../src/main/resources/application.properties      |  1 +
+ .../src/main/resources/application.properties      |  1 +
+ applications/server.gradle                         |  1 +
+ .../io/pivotal/pal/tracker/timesheets/App.java     |  2 ++
+ .../src/main/resources/application.properties      |  1 +
+ components/allocations/build.gradle                |  1 +
+ .../pal/tracker/allocations/ProjectClient.java     | 26 ++++++++++++++++++----
+ components/backlog/build.gradle                    |  1 +
+ .../pivotal/pal/tracker/backlog/ProjectClient.java | 20 ++++++++++++++++-
+ components/timesheets/build.gradle                 |  1 +
+ .../pal/tracker/timesheets/ProjectClient.java      | 20 ++++++++++++++++-
+ manifest-allocations.yml                           |  1 +
+ manifest-backlog.yml                               |  1 +
+ manifest-registration.yml                          |  1 +
+ manifest-timesheets.yml                            |  1 +
+ 18 files changed, 78 insertions(+), 6 deletions(-)
+
+diff --git a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
+index 916a458..7afd701 100644
+--- a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
++++ b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
+@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker.allocations;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+@@ -11,6 +12,7 @@ import org.springframework.web.client.RestOperations;
+ import java.util.TimeZone;
+ 
+ 
++@EnableCircuitBreaker
+ @EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({"io.pivotal.pal.tracker.allocations", "io.pivotal.pal.tracker.restsupport"})
+diff --git a/applications/allocations-server/src/main/resources/application.properties b/applications/allocations-server/src/main/resources/application.properties
+index 25345c2..8d2da10 100644
+--- a/applications/allocations-server/src/main/resources/application.properties
++++ b/applications/allocations-server/src/main/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_allocations_dev?useSSL
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
+index 23d1c1d..a9b1d27 100644
+--- a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
++++ b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
+@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker.backlog;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+@@ -11,6 +12,7 @@ import org.springframework.web.client.RestOperations;
+ import java.util.TimeZone;
+ 
+ 
++@EnableCircuitBreaker
+ @EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({"io.pivotal.pal.tracker.backlog", "io.pivotal.pal.tracker.restsupport"})
+diff --git a/applications/backlog-server/src/main/resources/application.properties b/applications/backlog-server/src/main/resources/application.properties
+index 2d4285a..eef3eaf 100644
+--- a/applications/backlog-server/src/main/resources/application.properties
++++ b/applications/backlog-server/src/main/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_backlog_dev?useSSL=fal
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/registration-server/src/main/resources/application.properties b/applications/registration-server/src/main/resources/application.properties
+index f694d56..a5b41ec 100644
+--- a/applications/registration-server/src/main/resources/application.properties
++++ b/applications/registration-server/src/main/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_dev?useSS
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/server.gradle b/applications/server.gradle
+index 2e1222a..929d6a5 100644
+--- a/applications/server.gradle
++++ b/applications/server.gradle
+@@ -13,6 +13,7 @@ dependencies {
+     compile "org.springframework.boot:spring-boot-starter-web"
+     compile "org.springframework.boot:spring-boot-starter-actuator"
+     compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
++    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
+ 
+     compile "com.zaxxer:HikariCP:2.3.7"
+     compile "mysql:mysql-connector-java:$mysqlVersion"
+diff --git a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
+index 77ab671..b709f6a 100644
+--- a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
++++ b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
+@@ -3,6 +3,7 @@ package io.pivotal.pal.tracker.timesheets;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+@@ -11,6 +12,7 @@ import org.springframework.web.client.RestOperations;
+ import java.util.TimeZone;
+ 
+ 
++@EnableCircuitBreaker
+ @EnableEurekaClient
+ @SpringBootApplication
+ @ComponentScan({"io.pivotal.pal.tracker.timesheets", "io.pivotal.pal.tracker.restsupport"})
+diff --git a/applications/timesheets-server/src/main/resources/application.properties b/applications/timesheets-server/src/main/resources/application.properties
+index a5f6df5..166c628 100644
+--- a/applications/timesheets-server/src/main/resources/application.properties
++++ b/applications/timesheets-server/src/main/resources/application.properties
+@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_timesheets_dev?useSSL=
+ registration.server.endpoint=http://registration-server
+ security.basic.enabled=false
+ management.security.enabled=false
++hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/components/allocations/build.gradle b/components/allocations/build.gradle
+index 4526bf7..055a3a7 100644
+--- a/components/allocations/build.gradle
++++ b/components/allocations/build.gradle
+@@ -1,6 +1,7 @@
+ dependencies {
+     compile project(":components:rest-support")
+     compile "org.springframework:spring-jdbc:$springVersion"
++    compile "com.netflix.hystrix:hystrix-javanica:1.5.6"
+ 
+     testCompile project(":components:test-support")
+ }
+diff --git a/components/allocations/src/main/java/io/pivotal/pal/tracker/allocations/ProjectClient.java b/components/allocations/src/main/java/io/pivotal/pal/tracker/allocations/ProjectClient.java
+index 2358dab..886475c 100644
+--- a/components/allocations/src/main/java/io/pivotal/pal/tracker/allocations/ProjectClient.java
++++ b/components/allocations/src/main/java/io/pivotal/pal/tracker/allocations/ProjectClient.java
+@@ -1,18 +1,36 @@
+ package io.pivotal.pal.tracker.allocations;
+ 
++import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.web.client.RestOperations;
+ 
++import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
++
+ public class ProjectClient {
+ 
++    private final Logger logger = LoggerFactory.getLogger(getClass());
++    private final Map<Long, ProjectInfo> projectsCache = new ConcurrentHashMap<>();
+     private final RestOperations restOperations;
+-    private final String registrationServerEndpoint;
++    private final String endpoint;
+ 
+     public ProjectClient(RestOperations restOperations, String registrationServerEndpoint) {
+-        this.restOperations= restOperations;
+-        this.registrationServerEndpoint = registrationServerEndpoint;
++        this.restOperations = restOperations;
++        this.endpoint = registrationServerEndpoint;
+     }
+ 
++    @HystrixCommand(fallbackMethod = "getProjectFromCache")
+     public ProjectInfo getProject(long projectId) {
+-        return restOperations.getForObject(registrationServerEndpoint + "/projects/" + projectId, ProjectInfo.class);
++        ProjectInfo project = restOperations.getForObject(endpoint + "/projects/" + projectId, ProjectInfo.class);
++
++        projectsCache.put(projectId, project);
++
++        return project;
++    }
++
++    public ProjectInfo getProjectFromCache(long projectId) {
++        logger.info("Getting project with id {} from cache", projectId);
++        return projectsCache.get(projectId);
+     }
+ }
+diff --git a/components/backlog/build.gradle b/components/backlog/build.gradle
+index 4526bf7..055a3a7 100644
+--- a/components/backlog/build.gradle
++++ b/components/backlog/build.gradle
+@@ -1,6 +1,7 @@
+ dependencies {
+     compile project(":components:rest-support")
+     compile "org.springframework:spring-jdbc:$springVersion"
++    compile "com.netflix.hystrix:hystrix-javanica:1.5.6"
+ 
+     testCompile project(":components:test-support")
+ }
+diff --git a/components/backlog/src/main/java/io/pivotal/pal/tracker/backlog/ProjectClient.java b/components/backlog/src/main/java/io/pivotal/pal/tracker/backlog/ProjectClient.java
+index 3cdd67d..b6461e3 100644
+--- a/components/backlog/src/main/java/io/pivotal/pal/tracker/backlog/ProjectClient.java
++++ b/components/backlog/src/main/java/io/pivotal/pal/tracker/backlog/ProjectClient.java
+@@ -1,9 +1,17 @@
+ package io.pivotal.pal.tracker.backlog;
+ 
++import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.web.client.RestOperations;
+ 
++import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
++
+ public class ProjectClient {
+ 
++    private final Logger logger = LoggerFactory.getLogger(getClass());
++    private final Map<Long, ProjectInfo> projectsCache = new ConcurrentHashMap<>();
+     private final RestOperations restOperations;
+     private final String endpoint;
+ 
+@@ -12,7 +20,17 @@ public class ProjectClient {
+         this.endpoint = registrationServerEndpoint;
+     }
+ 
++    @HystrixCommand(fallbackMethod = "getProjectFromCache")
+     public ProjectInfo getProject(long projectId) {
+-        return restOperations.getForObject(endpoint + "/projects/" + projectId, ProjectInfo.class);
++        ProjectInfo project = restOperations.getForObject(endpoint + "/projects/" + projectId, ProjectInfo.class);
++
++        projectsCache.put(projectId, project);
++
++        return project;
++    }
++
++    public ProjectInfo getProjectFromCache(long projectId) {
++        logger.info("Getting project with id {} from cache", projectId);
++        return projectsCache.get(projectId);
+     }
+ }
+diff --git a/components/timesheets/build.gradle b/components/timesheets/build.gradle
+index 4526bf7..055a3a7 100644
+--- a/components/timesheets/build.gradle
++++ b/components/timesheets/build.gradle
+@@ -1,6 +1,7 @@
+ dependencies {
+     compile project(":components:rest-support")
+     compile "org.springframework:spring-jdbc:$springVersion"
++    compile "com.netflix.hystrix:hystrix-javanica:1.5.6"
+ 
+     testCompile project(":components:test-support")
+ }
+diff --git a/components/timesheets/src/main/java/io/pivotal/pal/tracker/timesheets/ProjectClient.java b/components/timesheets/src/main/java/io/pivotal/pal/tracker/timesheets/ProjectClient.java
+index bdbdb5b..23e2e6b 100644
+--- a/components/timesheets/src/main/java/io/pivotal/pal/tracker/timesheets/ProjectClient.java
++++ b/components/timesheets/src/main/java/io/pivotal/pal/tracker/timesheets/ProjectClient.java
+@@ -1,9 +1,17 @@
+ package io.pivotal.pal.tracker.timesheets;
+ 
++import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.web.client.RestOperations;
+ 
++import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
++
+ public class ProjectClient {
+ 
++    private final Logger logger = LoggerFactory.getLogger(getClass());
++    private final Map<Long, ProjectInfo> projectsCache = new ConcurrentHashMap<>();
+     private final RestOperations restOperations;
+     private final String endpoint;
+ 
+@@ -12,7 +20,17 @@ public class ProjectClient {
+         this.endpoint = registrationServerEndpoint;
+     }
+ 
++    @HystrixCommand(fallbackMethod = "getProjectFromCache")
+     public ProjectInfo getProject(long projectId) {
+-        return restOperations.getForObject(endpoint + "/projects/" + projectId, ProjectInfo.class);
++        ProjectInfo project = restOperations.getForObject(endpoint + "/projects/" + projectId, ProjectInfo.class);
++
++        projectsCache.put(projectId, project);
++
++        return project;
++    }
++
++    public ProjectInfo getProjectFromCache(long projectId) {
++        logger.info("Getting project with id {} from cache", projectId);
++        return projectsCache.get(projectId);
+     }
+ }
+diff --git a/manifest-allocations.yml b/manifest-allocations.yml
+index 7645118..dadeaf0 100644
+--- a/manifest-allocations.yml
++++ b/manifest-allocations.yml
+@@ -7,3 +7,4 @@ applications:
+   services:
+   - tracker-allocations-database
+   - tracker-service-registry
++  - tracker-circuit-breaker-dashboard
+diff --git a/manifest-backlog.yml b/manifest-backlog.yml
+index b07ba4b..6a0935b 100644
+--- a/manifest-backlog.yml
++++ b/manifest-backlog.yml
+@@ -7,3 +7,4 @@ applications:
+   services:
+   - tracker-backlog-database
+   - tracker-service-registry
++  - tracker-circuit-breaker-dashboard
+diff --git a/manifest-registration.yml b/manifest-registration.yml
+index 9174c14..37a71e4 100644
+--- a/manifest-registration.yml
++++ b/manifest-registration.yml
+@@ -7,3 +7,4 @@ applications:
+   services:
+   - tracker-registration-database
+   - tracker-service-registry
++  - tracker-circuit-breaker-dashboard
+diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
+index 26245bc..f7de4f7 100644
+--- a/manifest-timesheets.yml
++++ b/manifest-timesheets.yml
+@@ -7,3 +7,4 @@ applications:
+   services:
+   - tracker-timesheets-database
+   - tracker-service-registry
++  - tracker-circuit-breaker-dashboard
+-- 
+2.12.3
+
