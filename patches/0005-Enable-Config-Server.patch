@@ -1,4 +1,4 @@
-From 528aa0d123709010626e3613e9c51fe97752bc9d Mon Sep 17 00:00:00 2001
+From f67ddfdbe6db5cc5389a0f89f365f5afc8050b14 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Sun, 9 Jul 2017 09:41:13 -0600
 Subject: [PATCH 5/5] Enable Config Server

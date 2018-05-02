@@ -1,4 +1,4 @@
-From 18dc61ae19b52694ca1fe20ae9f3df0883a060a8 Mon Sep 17 00:00:00 2001
+From 7179bfd8156712170dab49494f8eb7e320ef2471 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 6 Jul 2017 10:44:44 -0600
 Subject: [PATCH 1/5] Initial commit
@@ -33,7 +33,7 @@ Subject: [PATCH 1/5] Initial commit
  .../gradlebuild/DependenciesGraphPlugin.groovy     |  66 ++++++++
  .../gradlebuild/LocalMigrationPlugin.groovy        |  46 ++++++
  ci/build.yml                                       |  38 +++++
- ci/pipeline.yml                                    | 137 ++++++++++++++++
+ ci/pipeline.yml                                    | 133 ++++++++++++++++
  components/accounts/build.gradle                   |   7 +
  .../pal/tracker/accounts/AccountController.java    |  39 +++++
  .../pivotal/pal/tracker/accounts/AccountInfo.java  |  88 +++++++++++
@@ -133,7 +133,7 @@ Subject: [PATCH 1/5] Initial commit
  requests.http                                      |  49 ++++++
  rest-client.env.json                               |  14 ++
  settings.gradle                                    |  23 +++
- 129 files changed, 5399 insertions(+)
+ 129 files changed, 5395 insertions(+)
  create mode 100644 .gitignore
  create mode 100644 applications/allocations-server/build.gradle
  create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
@@ -1015,10 +1015,10 @@ index 0000000..ab712c3
 +      service mysql stop
 diff --git a/ci/pipeline.yml b/ci/pipeline.yml
 new file mode 100644
-index 0000000..5a6d1f3
+index 0000000..786e9be
 --- /dev/null
 +++ b/ci/pipeline.yml
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,133 @@
 +---
 +resources:
 +- name: pal-tracker
@@ -1116,7 +1116,6 @@ index 0000000..5a6d1f3
 +    params:
 +      manifest: pal-tracker/manifest-allocations.yml
 +      path: allocations-artifacts/allocations-server*.jar
-+      current_app_name: tracker-allocations
 +
 +- name: deploy-backlog
 +  plan:
@@ -1129,7 +1128,6 @@ index 0000000..5a6d1f3
 +    params:
 +      manifest: pal-tracker/manifest-backlog.yml
 +      path: backlog-artifacts/backlog-server*.jar
-+      current_app_name: tracker-backlog
 +
 +- name: deploy-registration
 +  plan:
@@ -1142,7 +1140,6 @@ index 0000000..5a6d1f3
 +    params:
 +      manifest: pal-tracker/manifest-registration.yml
 +      path: registration-artifacts/registration-server*.jar
-+      current_app_name: tracker-registration
 +
 +- name: deploy-timesheets
 +  plan:
@@ -1155,7 +1152,6 @@ index 0000000..5a6d1f3
 +    params:
 +      manifest: pal-tracker/manifest-timesheets.yml
 +      path: timesheets-artifacts/timesheets-server*.jar
-+      current_app_name: tracker-timesheets
 diff --git a/components/accounts/build.gradle b/components/accounts/build.gradle
 new file mode 100644
 index 0000000..0eaa050

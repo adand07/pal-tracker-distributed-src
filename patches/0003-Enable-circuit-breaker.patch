@@ -1,4 +1,4 @@
-From fe77bfc058ac575166f0a260be509adc81e04374 Mon Sep 17 00:00:00 2001
+From 0754234e8b50b0944639c79f84beb55fd7b0c09c Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 09:52:54 -0600
 Subject: [PATCH 3/5] Enable circuit breaker
