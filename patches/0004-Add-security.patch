@@ -1,4 +1,4 @@
-From 42e455d3577c42f8554774277a3a79a7668f145a Mon Sep 17 00:00:00 2001
+From 52c656d067244b20f689ed266385b88d1cb5b0d4 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 16:24:52 -0600
 Subject: [PATCH 4/5] Add security
@@ -581,11 +581,11 @@ index 34a7550..73324da 100644
          );
      }
 diff --git a/manifest-allocations.yml b/manifest-allocations.yml
-index dadeaf0..68751cd 100644
+index 650e3da..d91b448 100644
 --- a/manifest-allocations.yml
 +++ b/manifest-allocations.yml
-@@ -4,7 +4,12 @@ applications:
-   host: allocations-pal-INITIALS
+@@ -5,7 +5,12 @@ applications:
+   - route: allocations-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 +  env:
@@ -598,11 +598,11 @@ index dadeaf0..68751cd 100644
    - tracker-circuit-breaker-dashboard
 +  - tracker-sso
 diff --git a/manifest-backlog.yml b/manifest-backlog.yml
-index 6a0935b..a3a2647 100644
+index a38672b..14a8cf6 100644
 --- a/manifest-backlog.yml
 +++ b/manifest-backlog.yml
-@@ -4,7 +4,12 @@ applications:
-   host: backlog-pal-INITIALS
+@@ -5,7 +5,12 @@ applications:
+   - route: backlog-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 +  env:
@@ -615,11 +615,11 @@ index 6a0935b..a3a2647 100644
    - tracker-circuit-breaker-dashboard
 +  - tracker-sso
 diff --git a/manifest-registration.yml b/manifest-registration.yml
-index 37a71e4..bdf115d 100644
+index 72b9a7f..1c8e1b1 100644
 --- a/manifest-registration.yml
 +++ b/manifest-registration.yml
-@@ -4,7 +4,12 @@ applications:
-   host: registration-pal-INITIALS
+@@ -5,7 +5,12 @@ applications:
+   - route: registration-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 +  env:
@@ -632,11 +632,11 @@ index 37a71e4..bdf115d 100644
    - tracker-circuit-breaker-dashboard
 +  - tracker-sso
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
-index f7de4f7..088c093 100644
+index 08932c9..aa54689 100644
 --- a/manifest-timesheets.yml
 +++ b/manifest-timesheets.yml
-@@ -4,7 +4,12 @@ applications:
-   host: timesheets-pal-INITIALS
+@@ -5,7 +5,12 @@ applications:
+   - route: timesheets-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 +  env:

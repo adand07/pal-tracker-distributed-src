@@ -1,4 +1,4 @@
-From 0754234e8b50b0944639c79f84beb55fd7b0c09c Mon Sep 17 00:00:00 2001
+From 9caf726397e38063061a1d50ded0d5286932ab72 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 09:52:54 -0600
 Subject: [PATCH 3/5] Enable circuit breaker
@@ -296,37 +296,37 @@ index bdbdb5b..23e2e6b 100644
      }
  }
 diff --git a/manifest-allocations.yml b/manifest-allocations.yml
-index 7645118..dadeaf0 100644
+index 73012be..650e3da 100644
 --- a/manifest-allocations.yml
 +++ b/manifest-allocations.yml
-@@ -7,3 +7,4 @@ applications:
+@@ -8,3 +8,4 @@ applications:
    services:
    - tracker-allocations-database
    - tracker-service-registry
 +  - tracker-circuit-breaker-dashboard
 diff --git a/manifest-backlog.yml b/manifest-backlog.yml
-index b07ba4b..6a0935b 100644
+index 2bfd1cb..a38672b 100644
 --- a/manifest-backlog.yml
 +++ b/manifest-backlog.yml
-@@ -7,3 +7,4 @@ applications:
+@@ -8,3 +8,4 @@ applications:
    services:
    - tracker-backlog-database
    - tracker-service-registry
 +  - tracker-circuit-breaker-dashboard
 diff --git a/manifest-registration.yml b/manifest-registration.yml
-index 9174c14..37a71e4 100644
+index 2616a97..72b9a7f 100644
 --- a/manifest-registration.yml
 +++ b/manifest-registration.yml
-@@ -7,3 +7,4 @@ applications:
+@@ -8,3 +8,4 @@ applications:
    services:
    - tracker-registration-database
    - tracker-service-registry
 +  - tracker-circuit-breaker-dashboard
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
-index 26245bc..f7de4f7 100644
+index a7f5000..08932c9 100644
 --- a/manifest-timesheets.yml
 +++ b/manifest-timesheets.yml
-@@ -7,3 +7,4 @@ applications:
+@@ -8,3 +8,4 @@ applications:
    services:
    - tracker-timesheets-database
    - tracker-service-registry

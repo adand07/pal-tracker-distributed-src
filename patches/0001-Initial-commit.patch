@@ -1,4 +1,4 @@
-From 7179bfd8156712170dab49494f8eb7e320ef2471 Mon Sep 17 00:00:00 2001
+From 7b4537d44233752417af98bf495a16260f9cc24c Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 6 Jul 2017 10:44:44 -0600
 Subject: [PATCH 1/5] Initial commit
@@ -126,14 +126,14 @@ Subject: [PATCH 1/5] Initial commit
  .../pal/tracker/support/ApplicationServer.java     |  80 ++++++++++
  .../pivotal/pal/tracker/support/HttpClient.java    |  85 ++++++++++
  .../pivotal/pal/tracker/support/MapBuilder.java    |  26 ++++
- manifest-allocations.yml                           |  10 ++
- manifest-backlog.yml                               |  10 ++
- manifest-registration.yml                          |   8 +
- manifest-timesheets.yml                            |  10 ++
+ manifest-allocations.yml                           |  11 ++
+ manifest-backlog.yml                               |  11 ++
+ manifest-registration.yml                          |   9 ++
+ manifest-timesheets.yml                            |  11 ++
  requests.http                                      |  49 ++++++
  rest-client.env.json                               |  14 ++
  settings.gradle                                    |  23 +++
- 129 files changed, 5395 insertions(+)
+ 129 files changed, 5399 insertions(+)
  create mode 100644 .gitignore
  create mode 100644 applications/allocations-server/build.gradle
  create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
@@ -7224,14 +7224,15 @@ index 0000000..a47466f
 +}
 diff --git a/manifest-allocations.yml b/manifest-allocations.yml
 new file mode 100644
-index 0000000..ab477c5
+index 0000000..117900f
 --- /dev/null
 +++ b/manifest-allocations.yml
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,11 @@
 +applications:
 +- name: tracker-allocations
 +  path: ./applications/allocations-server/build/libs/allocations-server.jar
-+  host: allocations-pal-INITIALS
++  routes:
++  - route: allocations-pal-INITIALS.apps.chicken.pal.pivotal.io
 +  memory: 1G
 +  instances: 1
 +  env:
@@ -7240,14 +7241,15 @@ index 0000000..ab477c5
 +  - tracker-allocations-database
 diff --git a/manifest-backlog.yml b/manifest-backlog.yml
 new file mode 100644
-index 0000000..ec2da78
+index 0000000..03e9bfe
 --- /dev/null
 +++ b/manifest-backlog.yml
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,11 @@
 +applications:
 +- name: tracker-backlog
 +  path: ./applications/backlog-server/build/libs/backlog-server.jar
-+  host: backlog-pal-INITIALS
++  routes:
++  - route: backlog-pal-INITIALS.apps.chicken.pal.pivotal.io
 +  memory: 1G
 +  instances: 1
 +  env:
@@ -7256,28 +7258,30 @@ index 0000000..ec2da78
 +  - tracker-backlog-database
 diff --git a/manifest-registration.yml b/manifest-registration.yml
 new file mode 100644
-index 0000000..140f533
+index 0000000..60714a1
 --- /dev/null
 +++ b/manifest-registration.yml
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,9 @@
 +applications:
 +- name: tracker-registration
 +  path: ./applications/registration-server/build/libs/registration-server.jar
-+  host: registration-pal-INITIALS
++  routes:
++  - route: registration-pal-INITIALS.apps.chicken.pal.pivotal.io
 +  memory: 1G
 +  instances: 1
 +  services:
 +  - tracker-registration-database
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
 new file mode 100644
-index 0000000..f98b92a
+index 0000000..ce59ad5
 --- /dev/null
 +++ b/manifest-timesheets.yml
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,11 @@
 +applications:
 +- name: tracker-timesheets
 +  path: ./applications/timesheets-server/build/libs/timesheets-server.jar
-+  host: timesheets-pal-INITIALS
++  routes:
++  - route: timesheets-pal-INITIALS.apps.chicken.pal.pivotal.io
 +  memory: 1G
 +  instances: 1
 +  env:

@@ -1,4 +1,4 @@
-From f1b26adfe0a129c408152e09a2547f8bce2e9a00 Mon Sep 17 00:00:00 2001
+From 6727d542dd8ea36e47f886396190c678082e169b Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 6 Jul 2017 16:57:30 -0600
 Subject: [PATCH 2/5] Enable service discovery
@@ -297,11 +297,11 @@ index 023b1b8..34a7550 100644
          for (String port : ports) waitUntilServerIsUp(port);
      }
 diff --git a/manifest-allocations.yml b/manifest-allocations.yml
-index ab477c5..7645118 100644
+index 117900f..73012be 100644
 --- a/manifest-allocations.yml
 +++ b/manifest-allocations.yml
-@@ -4,7 +4,6 @@ applications:
-   host: allocations-pal-INITIALS
+@@ -5,7 +5,6 @@ applications:
+   - route: allocations-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 -  env:
@@ -310,11 +310,11 @@ index ab477c5..7645118 100644
    - tracker-allocations-database
 +  - tracker-service-registry
 diff --git a/manifest-backlog.yml b/manifest-backlog.yml
-index ec2da78..b07ba4b 100644
+index 03e9bfe..2bfd1cb 100644
 --- a/manifest-backlog.yml
 +++ b/manifest-backlog.yml
-@@ -4,7 +4,6 @@ applications:
-   host: backlog-pal-INITIALS
+@@ -5,7 +5,6 @@ applications:
+   - route: backlog-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 -  env:
@@ -323,20 +323,20 @@ index ec2da78..b07ba4b 100644
    - tracker-backlog-database
 +  - tracker-service-registry
 diff --git a/manifest-registration.yml b/manifest-registration.yml
-index 140f533..9174c14 100644
+index 60714a1..2616a97 100644
 --- a/manifest-registration.yml
 +++ b/manifest-registration.yml
-@@ -6,3 +6,4 @@ applications:
+@@ -7,3 +7,4 @@ applications:
    instances: 1
    services:
    - tracker-registration-database
 +  - tracker-service-registry
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
-index f98b92a..26245bc 100644
+index ce59ad5..a7f5000 100644
 --- a/manifest-timesheets.yml
 +++ b/manifest-timesheets.yml
-@@ -4,7 +4,6 @@ applications:
-   host: timesheets-pal-INITIALS
+@@ -5,7 +5,6 @@ applications:
+   - route: timesheets-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
 -  env:

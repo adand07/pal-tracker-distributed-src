@@ -1,4 +1,4 @@
-From f67ddfdbe6db5cc5389a0f89f365f5afc8050b14 Mon Sep 17 00:00:00 2001
+From 0ccaaac1f0f6a2121d94dd59bd1bbaa61576b608 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Sun, 9 Jul 2017 09:41:13 -0600
 Subject: [PATCH 5/5] Enable Config Server
@@ -204,10 +204,10 @@ index 73324da..9c829f4 100644
          );
      }
 diff --git a/manifest-allocations.yml b/manifest-allocations.yml
-index 68751cd..ae3ca49 100644
+index d91b448..fc3719f 100644
 --- a/manifest-allocations.yml
 +++ b/manifest-allocations.yml
-@@ -6,10 +6,9 @@ applications:
+@@ -7,10 +7,9 @@ applications:
    instances: 1
    env:
      GRANT_TYPE: client_credentials
@@ -220,10 +220,10 @@ index 68751cd..ae3ca49 100644
    - tracker-sso
 +  - tracker-config-server
 diff --git a/manifest-backlog.yml b/manifest-backlog.yml
-index a3a2647..904e479 100644
+index 14a8cf6..a709037 100644
 --- a/manifest-backlog.yml
 +++ b/manifest-backlog.yml
-@@ -6,10 +6,9 @@ applications:
+@@ -7,10 +7,9 @@ applications:
    instances: 1
    env:
      GRANT_TYPE: client_credentials
@@ -236,10 +236,10 @@ index a3a2647..904e479 100644
    - tracker-sso
 +  - tracker-config-server
 diff --git a/manifest-registration.yml b/manifest-registration.yml
-index bdf115d..f5873f5 100644
+index 1c8e1b1..098bddc 100644
 --- a/manifest-registration.yml
 +++ b/manifest-registration.yml
-@@ -6,10 +6,9 @@ applications:
+@@ -7,10 +7,9 @@ applications:
    instances: 1
    env:
      GRANT_TYPE: client_credentials
@@ -252,10 +252,10 @@ index bdf115d..f5873f5 100644
    - tracker-sso
 +  - tracker-config-server
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
-index 088c093..ca2ae19 100644
+index aa54689..6b02b2f 100644
 --- a/manifest-timesheets.yml
 +++ b/manifest-timesheets.yml
-@@ -6,10 +6,9 @@ applications:
+@@ -7,10 +7,9 @@ applications:
    instances: 1
    env:
      GRANT_TYPE: client_credentials
