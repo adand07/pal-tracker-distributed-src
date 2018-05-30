@@ -1,4 +1,4 @@
-From 52c656d067244b20f689ed266385b88d1cb5b0d4 Mon Sep 17 00:00:00 2001
+From d77941fbc76a64fb3711ff08ebce0f3188d283df Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 16:24:52 -0600
 Subject: [PATCH 4/5] Add security
@@ -366,17 +366,16 @@ index 0000000..0ca7b29
 +    }
 +}
 diff --git a/applications/registration-server/src/main/resources/application.properties b/applications/registration-server/src/main/resources/application.properties
-index a5b41ec..3a50df9 100644
+index f694d56..c487553 100644
 --- a/applications/registration-server/src/main/resources/application.properties
 +++ b/applications/registration-server/src/main/resources/application.properties
-@@ -4,6 +4,5 @@ server.port=8083
+@@ -4,5 +4,4 @@ server.port=8083
  spring.datasource.username=tracker
  spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_dev?useSSL=false&useTimezone=true&serverTimezone=UTC&useLegacyDatetimeCode=false
  registration.server.endpoint=http://registration-server
 -security.basic.enabled=false
 -management.security.enabled=false
 +security.oauth2.resource.token-info-uri=http://localhost:8999/oauth/check_token
- hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
 diff --git a/applications/registration-server/src/test/resources/application.properties b/applications/registration-server/src/test/resources/application.properties
 index b5c41e5..ef75701 100644
 --- a/applications/registration-server/src/test/resources/application.properties
@@ -387,19 +386,19 @@ index b5c41e5..ef75701 100644
  management.security.enabled=false
 +application.oauth-enabled=false
 diff --git a/applications/server.gradle b/applications/server.gradle
-index 929d6a5..7855703 100644
+index 2e1222a..c852121 100644
 --- a/applications/server.gradle
 +++ b/applications/server.gradle
-@@ -14,6 +14,8 @@ dependencies {
+@@ -13,6 +13,8 @@ dependencies {
+     compile "org.springframework.boot:spring-boot-starter-web"
      compile "org.springframework.boot:spring-boot-starter-actuator"
      compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
-     compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
 +    compile "org.springframework.cloud:spring-cloud-starter-oauth2"
 +    compile "io.pivotal.spring.cloud:spring-cloud-sso-connector:$springCloudSsoVersion"
  
      compile "com.zaxxer:HikariCP:2.3.7"
      compile "mysql:mysql-connector-java:$mysqlVersion"
-@@ -21,3 +23,11 @@ dependencies {
+@@ -20,3 +22,11 @@ dependencies {
  
      testCompile project(":components:test-support")
  }
@@ -615,10 +614,10 @@ index a38672b..14a8cf6 100644
    - tracker-circuit-breaker-dashboard
 +  - tracker-sso
 diff --git a/manifest-registration.yml b/manifest-registration.yml
-index 72b9a7f..1c8e1b1 100644
+index 2616a97..b3c8bd9 100644
 --- a/manifest-registration.yml
 +++ b/manifest-registration.yml
-@@ -5,7 +5,12 @@ applications:
+@@ -5,6 +5,11 @@ applications:
    - route: registration-pal-INITIALS.apps.chicken.pal.pivotal.io
    memory: 1G
    instances: 1
@@ -629,7 +628,6 @@ index 72b9a7f..1c8e1b1 100644
    services:
    - tracker-registration-database
    - tracker-service-registry
-   - tracker-circuit-breaker-dashboard
 +  - tracker-sso
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
 index 08932c9..aa54689 100644

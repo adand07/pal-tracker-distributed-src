@@ -1,15 +1,16 @@
-From 9caf726397e38063061a1d50ded0d5286932ab72 Mon Sep 17 00:00:00 2001
+From a8af3b851f535b9a8322c3a410c922399a4afa91 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 09:52:54 -0600
 Subject: [PATCH 3/5] Enable circuit breaker
 
 ---
+ applications/allocations-server/build.gradle       |  1 +
  .../io/pivotal/pal/tracker/allocations/App.java    |  2 ++
  .../src/main/resources/application.properties      |  1 +
+ applications/backlog-server/build.gradle           |  1 +
  .../java/io/pivotal/pal/tracker/backlog/App.java   |  2 ++
  .../src/main/resources/application.properties      |  1 +
- .../src/main/resources/application.properties      |  1 +
- applications/server.gradle                         |  1 +
+ applications/timesheets-server/build.gradle        |  1 +
  .../io/pivotal/pal/tracker/timesheets/App.java     |  2 ++
  .../src/main/resources/application.properties      |  1 +
  components/allocations/build.gradle                |  1 +
@@ -20,10 +21,19 @@ Subject: [PATCH 3/5] Enable circuit breaker
  .../pal/tracker/timesheets/ProjectClient.java      | 20 ++++++++++++++++-
  manifest-allocations.yml                           |  1 +
  manifest-backlog.yml                               |  1 +
- manifest-registration.yml                          |  1 +
  manifest-timesheets.yml                            |  1 +
  18 files changed, 78 insertions(+), 6 deletions(-)
 
+diff --git a/applications/allocations-server/build.gradle b/applications/allocations-server/build.gradle
+index f73756a..3ae9b2f 100644
+--- a/applications/allocations-server/build.gradle
++++ b/applications/allocations-server/build.gradle
+@@ -2,4 +2,5 @@ apply from: "$projectDir/../server.gradle"
+ 
+ dependencies {
+     compile project(":components:allocations")
++    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
+ }
 diff --git a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java b/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
 index 916a458..7afd701 100644
 --- a/applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
@@ -53,6 +63,16 @@ index 25345c2..8d2da10 100644
  security.basic.enabled=false
  management.security.enabled=false
 +hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
+diff --git a/applications/backlog-server/build.gradle b/applications/backlog-server/build.gradle
+index 954e9c7..4a3c376 100644
+--- a/applications/backlog-server/build.gradle
++++ b/applications/backlog-server/build.gradle
+@@ -2,4 +2,5 @@ apply from: "$projectDir/../server.gradle"
+ 
+ dependencies {
+     compile project(":components:backlog")
++    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
+ }
 diff --git a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java b/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
 index 23d1c1d..a9b1d27 100644
 --- a/applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/App.java
@@ -82,27 +102,16 @@ index 2d4285a..eef3eaf 100644
  security.basic.enabled=false
  management.security.enabled=false
 +hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
-diff --git a/applications/registration-server/src/main/resources/application.properties b/applications/registration-server/src/main/resources/application.properties
-index f694d56..a5b41ec 100644
---- a/applications/registration-server/src/main/resources/application.properties
-+++ b/applications/registration-server/src/main/resources/application.properties
-@@ -6,3 +6,4 @@ spring.datasource.url=jdbc:mysql://localhost:3306/tracker_registration_dev?useSS
- registration.server.endpoint=http://registration-server
- security.basic.enabled=false
- management.security.enabled=false
-+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=5000
-diff --git a/applications/server.gradle b/applications/server.gradle
-index 2e1222a..929d6a5 100644
---- a/applications/server.gradle
-+++ b/applications/server.gradle
-@@ -13,6 +13,7 @@ dependencies {
-     compile "org.springframework.boot:spring-boot-starter-web"
-     compile "org.springframework.boot:spring-boot-starter-actuator"
-     compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
-+    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
+diff --git a/applications/timesheets-server/build.gradle b/applications/timesheets-server/build.gradle
+index 0926483..98263f0 100644
+--- a/applications/timesheets-server/build.gradle
++++ b/applications/timesheets-server/build.gradle
+@@ -2,4 +2,5 @@ apply from: "$projectDir/../server.gradle"
  
-     compile "com.zaxxer:HikariCP:2.3.7"
-     compile "mysql:mysql-connector-java:$mysqlVersion"
+ dependencies {
+     compile project(":components:timesheets")
++    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-circuit-breaker"
+ }
 diff --git a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java b/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
 index 77ab671..b709f6a 100644
 --- a/applications/timesheets-server/src/main/java/io/pivotal/pal/tracker/timesheets/App.java
@@ -311,15 +320,6 @@ index 2bfd1cb..a38672b 100644
 @@ -8,3 +8,4 @@ applications:
    services:
    - tracker-backlog-database
-   - tracker-service-registry
-+  - tracker-circuit-breaker-dashboard
-diff --git a/manifest-registration.yml b/manifest-registration.yml
-index 2616a97..72b9a7f 100644
---- a/manifest-registration.yml
-+++ b/manifest-registration.yml
-@@ -8,3 +8,4 @@ applications:
-   services:
-   - tracker-registration-database
    - tracker-service-registry
 +  - tracker-circuit-breaker-dashboard
 diff --git a/manifest-timesheets.yml b/manifest-timesheets.yml
