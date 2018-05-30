@@ -1,4 +1,4 @@
-From d77941fbc76a64fb3711ff08ebce0f3188d283df Mon Sep 17 00:00:00 2001
+From f5733c842a394241a5b6db68e30505099d20ca73 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 16:24:52 -0600
 Subject: [PATCH 4/5] Add security
@@ -19,7 +19,7 @@ Subject: [PATCH 4/5] Add security
  .../registration/OauthResourceServerConfig.java    | 24 +++++++++++++++
  .../src/main/resources/application.properties      |  3 +-
  .../src/test/resources/application.properties      |  1 +
- applications/server.gradle                         | 10 ++++++
+ applications/server.gradle                         |  9 ++++++
  .../io/pivotal/pal/tracker/timesheets/App.java     |  4 +++
  .../timesheets/NoOauthResourceServerConfig.java    | 26 ++++++++++++++++
  .../timesheets/OauthResourceServerConfig.java      | 36 ++++++++++++++++++++++
@@ -37,7 +37,7 @@ Subject: [PATCH 4/5] Add security
  .../pal/tracker/oauthserver/SecurityConfig.java    | 29 +++++++++++++++++
  .../src/main/resources/application.properties      |  2 ++
  settings.gradle                                    |  1 +
- 33 files changed, 344 insertions(+), 18 deletions(-)
+ 33 files changed, 343 insertions(+), 18 deletions(-)
  create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/NoOauthResourceServerConfig.java
  create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/OauthResourceServerConfig.java
  create mode 100644 applications/backlog-server/src/main/java/io/pivotal/pal/tracker/backlog/NoOauthResourceServerConfig.java
@@ -386,19 +386,18 @@ index b5c41e5..ef75701 100644
  management.security.enabled=false
 +application.oauth-enabled=false
 diff --git a/applications/server.gradle b/applications/server.gradle
-index 2e1222a..c852121 100644
+index 2e1222a..b5c929b 100644
 --- a/applications/server.gradle
 +++ b/applications/server.gradle
-@@ -13,6 +13,8 @@ dependencies {
+@@ -13,6 +13,7 @@ dependencies {
      compile "org.springframework.boot:spring-boot-starter-web"
      compile "org.springframework.boot:spring-boot-starter-actuator"
      compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
-+    compile "org.springframework.cloud:spring-cloud-starter-oauth2"
 +    compile "io.pivotal.spring.cloud:spring-cloud-sso-connector:$springCloudSsoVersion"
  
      compile "com.zaxxer:HikariCP:2.3.7"
      compile "mysql:mysql-connector-java:$mysqlVersion"
-@@ -20,3 +22,11 @@ dependencies {
+@@ -20,3 +21,11 @@ dependencies {
  
      testCompile project(":components:test-support")
  }

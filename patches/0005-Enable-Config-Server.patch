@@ -1,4 +1,4 @@
-From 6c22f4eacf90290540d78eb9bfeecbda8c4795a8 Mon Sep 17 00:00:00 2001
+From d4efc1a1195d0178a7ab7bff190f57664e977527 Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Sun, 9 Jul 2017 09:41:13 -0600
 Subject: [PATCH 5/5] Enable Config Server
@@ -132,18 +132,18 @@ index ef75701..ca162a2 100644
  management.security.enabled=false
  application.oauth-enabled=false
 diff --git a/applications/server.gradle b/applications/server.gradle
-index c852121..f297736 100644
+index b5c929b..96f0aad 100644
 --- a/applications/server.gradle
 +++ b/applications/server.gradle
-@@ -15,6 +15,7 @@ dependencies {
+@@ -14,6 +14,7 @@ dependencies {
+     compile "org.springframework.boot:spring-boot-starter-actuator"
      compile "io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry"
-     compile "org.springframework.cloud:spring-cloud-starter-oauth2"
      compile "io.pivotal.spring.cloud:spring-cloud-sso-connector:$springCloudSsoVersion"
 +    compile "io.pivotal.spring.cloud:spring-cloud-services-starter-config-client"
  
      compile "com.zaxxer:HikariCP:2.3.7"
      compile "mysql:mysql-connector-java:$mysqlVersion"
-@@ -27,6 +28,11 @@ bootRun.environment([
+@@ -26,6 +27,11 @@ bootRun.environment([
      "APPLICATION_OAUTH_ENABLED": true,
      "SECURITY_OAUTH2_CLIENT_CLIENT_ID": "tracker-client",
      "SECURITY_OAUTH2_CLIENT_CLIENT_SECRET": "supersecret",
