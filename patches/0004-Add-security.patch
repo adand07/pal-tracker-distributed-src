@@ -1,4 +1,4 @@
-From f5733c842a394241a5b6db68e30505099d20ca73 Mon Sep 17 00:00:00 2001
+From 3f0035c08ede7eed6f97fc3f539b21fea2077fde Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Fri, 7 Jul 2017 16:24:52 -0600
 Subject: [PATCH 4/5] Add security
@@ -527,14 +527,14 @@ index d641a85..4f12788 100644
  management.security.enabled=false
 +application.oauth-enabled=false
 diff --git a/build.gradle b/build.gradle
-index 6af7cb2..548f475 100644
+index 6af7cb2..e5238f6 100644
 --- a/build.gradle
 +++ b/build.gradle
 @@ -7,6 +7,7 @@ buildscript {
          mysqlVersion = "6.0.6"
          springCloudDependenciesVersion = "Edgware.RELEASE"
          springCloudServicesVersion = "1.6.0.RELEASE"
-+        springCloudSsoVersion = "1.1.0.RELEASE"
++        springCloudSsoVersion = "2.0.0.RELEASE"
      }
  
      repositories {
