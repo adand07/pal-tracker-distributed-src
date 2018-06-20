@@ -1,10 +1,11 @@
-From 7b4537d44233752417af98bf495a16260f9cc24c Mon Sep 17 00:00:00 2001
+From fe7c458eb4833b1de4ea817e442766ba386b9edf Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 6 Jul 2017 10:44:44 -0600
 Subject: [PATCH 1/5] Initial commit
 
 ---
  .gitignore                                         |   9 ++
+ .travis.yml                                        |  92 +++++++++++
  applications/allocations-server/build.gradle       |   5 +
  .../io/pivotal/pal/tracker/allocations/App.java    |  29 ++++
  .../src/main/resources/application.properties      |   6 +
@@ -32,8 +33,6 @@ Subject: [PATCH 1/5] Initial commit
  .../tracker/gradlebuild/DatabasesExtension.groovy  |   7 +
  .../gradlebuild/DependenciesGraphPlugin.groovy     |  66 ++++++++
  .../gradlebuild/LocalMigrationPlugin.groovy        |  46 ++++++
- ci/build.yml                                       |  38 +++++
- ci/pipeline.yml                                    | 133 ++++++++++++++++
  components/accounts/build.gradle                   |   7 +
  .../pal/tracker/accounts/AccountController.java    |  39 +++++
  .../pivotal/pal/tracker/accounts/AccountInfo.java  |  88 +++++++++++
@@ -133,8 +132,9 @@ Subject: [PATCH 1/5] Initial commit
  requests.http                                      |  49 ++++++
  rest-client.env.json                               |  14 ++
  settings.gradle                                    |  23 +++
- 129 files changed, 5399 insertions(+)
+ 128 files changed, 5320 insertions(+)
  create mode 100644 .gitignore
+ create mode 100644 .travis.yml
  create mode 100644 applications/allocations-server/build.gradle
  create mode 100644 applications/allocations-server/src/main/java/io/pivotal/pal/tracker/allocations/App.java
  create mode 100644 applications/allocations-server/src/main/resources/application.properties
@@ -162,8 +162,6 @@ Subject: [PATCH 1/5] Initial commit
  create mode 100644 buildSrc/src/main/groovy/io/pivotal/pal/tracker/gradlebuild/DatabasesExtension.groovy
  create mode 100644 buildSrc/src/main/groovy/io/pivotal/pal/tracker/gradlebuild/DependenciesGraphPlugin.groovy
  create mode 100644 buildSrc/src/main/groovy/io/pivotal/pal/tracker/gradlebuild/LocalMigrationPlugin.groovy
- create mode 100644 ci/build.yml
- create mode 100644 ci/pipeline.yml
  create mode 100644 components/accounts/build.gradle
  create mode 100644 components/accounts/src/main/java/io/pivotal/pal/tracker/accounts/AccountController.java
  create mode 100644 components/accounts/src/main/java/io/pivotal/pal/tracker/accounts/AccountInfo.java
@@ -279,6 +277,104 @@ index 0000000..e1e3c15
 +.DS_Store
 +.env
 +ci/variables.yml
+diff --git a/.travis.yml b/.travis.yml
+new file mode 100644
+index 0000000..f7c7f26
+--- /dev/null
++++ b/.travis.yml
+@@ -0,0 +1,92 @@
++dist: trusty
++sudo: false
++notifications:
++  email: false
++env:
++  - RELEASE_TAG="release-$TRAVIS_BUILD_NUMBER"
++stages:
++  - build and publish
++  - deploy
++  - migrate
++if: tag IS blank
++
++jobs:
++  include:
++    - stage: build and publish
++      language: java
++      jdk: oraclejdk8
++      addons:
++        mariadb: '10.2'
++      install: skip
++      before_script:
++        - mysql -uroot < databases/create_databases.sql
++        - ./gradlew testMigrate
++      script: ./gradlew clean build
++      before_deploy:
++        - git config --local user.name "Travis CI"
++        - git config --local user.email "travis@example.com"
++        - git tag -f $RELEASE_TAG
++      deploy:
++        provider: releases
++        api_key: $GITHUB_OAUTH_TOKEN
++        file:
++          - "applications/allocations-server/build/libs/allocations-server.jar"
++          - "applications/backlog-server/build/libs/backlog-server.jar"
++          - "applications/registration-server/build/libs/registration-server.jar"
++          - "applications/timesheets-server/build/libs/timesheets-server.jar"
++        skip_cleanup: true
++    - stage: deploy
++      language: java
++      script:
++        - echo "Downloading allocations server $RELEASE_TAG"
++        - wget -P applications/allocations-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/allocations-server.jar
++      before_deploy:
++        - cp manifest-allocations.yml manifest.yml
++        - echo "Deploying allocations server $RELEASE_TAG"
++      deploy: &cloudfoundry
++        provider: cloudfoundry
++        api: $CF_API_URL
++        username: $CF_USERNAME
++        password: $CF_PASSWORD
++        organization: $CF_ORG
++        space: review
++    - stage: deploy
++      language: bash
++      script:
++        - echo "Downloading backlog server $RELEASE_TAG"
++        - wget -P applications/backlog-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/backlog-server.jar
++      before_deploy:
++        - cp manifest-backlog.yml manifest.yml
++        - echo "Deploying backlog server $RELEASE_TAG"
++      deploy:
++        <<: *cloudfoundry
++    - stage: deploy
++      language: bash
++      script:
++        - echo "Downloading registration server $RELEASE_TAG"
++        - wget -P applications/registration-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/registration-server.jar
++      before_deploy:
++        - cp manifest-registration.yml manifest.yml
++        - echo "Deploying registration server $RELEASE_TAG"
++      deploy:
++        <<: *cloudfoundry
++    - stage: deploy
++      language: bash
++      script:
++        - echo "Downloading timesheets server $RELEASE_TAG"
++        - wget -P applications/timesheets-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/timesheets-server.jar
++      before_deploy:
++        - cp manifest-timesheets.yml manifest.yml
++        - echo "Deploying timesheets server $RELEASE_TAG"
++      deploy:
++        <<: *cloudfoundry
++    - stage: migrate
++      language: java
++      before_install:
++        - wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
++        - echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
++        - sudo apt-get update
++        - sudo apt-get install cf-cli
++      script:
++        - cf login -a $CF_API_URL -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s review
++        - ./gradlew cfMigrate
 diff --git a/applications/allocations-server/build.gradle b/applications/allocations-server/build.gradle
 new file mode 100644
 index 0000000..f73756a
@@ -969,189 +1065,6 @@ index 0000000..da7a43a
 +        return ext
 +    }
 +}
-diff --git a/ci/build.yml b/ci/build.yml
-new file mode 100644
-index 0000000..ab712c3
---- /dev/null
-+++ b/ci/build.yml
-@@ -0,0 +1,38 @@
-+---
-+platform: linux
-+
-+image_resource:
-+  type: docker-image
-+  source:
-+    repository: openjdk
-+    tag: '8-jdk'
-+
-+inputs:
-+- name: pal-tracker
-+- name: version
-+
-+outputs:
-+- name: build-output
-+
-+run:
-+  path: bash
-+  args:
-+    - -exc
-+    - |
-+      export DEBIAN_FRONTEND="noninteractive"
-+      apt-get update
-+      apt-get -y install mysql-server
-+      service mysql start
-+
-+      cd pal-tracker
-+
-+      mysql -uroot < databases/create_databases.sql
-+
-+      ./gradlew testMigrate clean build || (service mysql stop && exit 1)
-+
-+      cp applications/allocations-server/build/libs/allocations-server.jar ../build-output/allocations-server-`cat ../version/number`.jar
-+      cp applications/backlog-server/build/libs/backlog-server.jar ../build-output/backlog-server-`cat ../version/number`.jar
-+      cp applications/registration-server/build/libs/registration-server.jar ../build-output/registration-server-`cat ../version/number`.jar
-+      cp applications/timesheets-server/build/libs/timesheets-server.jar ../build-output/timesheets-server-`cat ../version/number`.jar
-+
-+      service mysql stop
-diff --git a/ci/pipeline.yml b/ci/pipeline.yml
-new file mode 100644
-index 0000000..786e9be
---- /dev/null
-+++ b/ci/pipeline.yml
-@@ -0,0 +1,133 @@
-+---
-+resources:
-+- name: pal-tracker
-+  type: git
-+  source:
-+    uri: {{github-repository}}
-+    branch: my-work
-+    private_key: {{github-private-key}}
-+
-+- name: version
-+  type: semver
-+  source:
-+    bucket: {{aws-bucket}}
-+    key: pal-tracker/current-version
-+    access_key_id: {{aws-access-key-id}}
-+    secret_access_key: {{aws-secret-access-key}}
-+
-+- name: allocations-artifacts
-+  type: s3
-+  source:
-+    bucket: {{aws-bucket}}
-+    regexp: pal-tracker/allocations-server-(.*).jar
-+    access_key_id: {{aws-access-key-id}}
-+    secret_access_key: {{aws-secret-access-key}}
-+
-+- name: backlog-artifacts
-+  type: s3
-+  source:
-+    bucket: {{aws-bucket}}
-+    regexp: pal-tracker/backlog-server-(.*).jar
-+    access_key_id: {{aws-access-key-id}}
-+    secret_access_key: {{aws-secret-access-key}}
-+
-+- name: registration-artifacts
-+  type: s3
-+  source:
-+    bucket: {{aws-bucket}}
-+    regexp: pal-tracker/registration-server-(.*).jar
-+    access_key_id: {{aws-access-key-id}}
-+    secret_access_key: {{aws-secret-access-key}}
-+
-+- name: timesheets-artifacts
-+  type: s3
-+  source:
-+    bucket: {{aws-bucket}}
-+    regexp: pal-tracker/timesheets-server-(.*).jar
-+    access_key_id: {{aws-access-key-id}}
-+    secret_access_key: {{aws-secret-access-key}}
-+
-+- name: cf
-+  type: cf
-+  source:
-+    api: {{cf-api-url}}
-+    username: {{cf-username}}
-+    password: {{cf-password}}
-+    organization: {{cf-org}}
-+    space: sandbox
-+    skip_cert_check: true
-+
-+
-+jobs:
-+- name: build
-+  plan:
-+  - get: pal-tracker
-+    trigger: true
-+  - get: version
-+    params:
-+      bump: patch
-+  - task: build and test
-+    file: pal-tracker/ci/build.yml
-+  - put: allocations-artifacts
-+    params:
-+      file: build-output/allocations*.jar
-+  - put: backlog-artifacts
-+    params:
-+      file: build-output/backlog*.jar
-+  - put: registration-artifacts
-+    params:
-+      file: build-output/registration*.jar
-+  - put: timesheets-artifacts
-+    params:
-+      file: build-output/timesheets*.jar
-+  - put: version
-+    params:
-+      file: version/number
-+
-+- name: deploy-allocations
-+  plan:
-+  - get: pal-tracker
-+    passed: [build]
-+    trigger: true
-+  - get: allocations-artifacts
-+    trigger: false
-+  - put: cf
-+    params:
-+      manifest: pal-tracker/manifest-allocations.yml
-+      path: allocations-artifacts/allocations-server*.jar
-+
-+- name: deploy-backlog
-+  plan:
-+  - get: pal-tracker
-+    passed: [build]
-+    trigger: true
-+  - get: backlog-artifacts
-+    trigger: false
-+  - put: cf
-+    params:
-+      manifest: pal-tracker/manifest-backlog.yml
-+      path: backlog-artifacts/backlog-server*.jar
-+
-+- name: deploy-registration
-+  plan:
-+  - get: pal-tracker
-+    passed: [build]
-+    trigger: true
-+  - get: registration-artifacts
-+    trigger: false
-+  - put: cf
-+    params:
-+      manifest: pal-tracker/manifest-registration.yml
-+      path: registration-artifacts/registration-server*.jar
-+
-+- name: deploy-timesheets
-+  plan:
-+  - get: pal-tracker
-+    passed: [build]
-+    trigger: true
-+  - get: timesheets-artifacts
-+    trigger: false
-+  - put: cf
-+    params:
-+      manifest: pal-tracker/manifest-timesheets.yml
-+      path: timesheets-artifacts/timesheets-server*.jar
 diff --git a/components/accounts/build.gradle b/components/accounts/build.gradle
 new file mode 100644
 index 0000000..0eaa050

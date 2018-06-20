@@ -1,4 +1,4 @@
-From 6727d542dd8ea36e47f886396190c678082e169b Mon Sep 17 00:00:00 2001
+From dd29844d7d3ff500a48c11951eb7f7f59098916d Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 6 Jul 2017 16:57:30 -0600
 Subject: [PATCH 2/5] Enable service discovery
