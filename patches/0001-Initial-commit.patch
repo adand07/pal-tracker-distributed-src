@@ -1,4 +1,4 @@
-From fe7c458eb4833b1de4ea817e442766ba386b9edf Mon Sep 17 00:00:00 2001
+From 75f8e0207a5bda91d1aef592febee0eaf4bdbbee Mon Sep 17 00:00:00 2001
 From: Tyson Gern <tgern@pivotal.io>
 Date: Thu, 6 Jul 2017 10:44:44 -0600
 Subject: [PATCH 1/5] Initial commit
@@ -279,12 +279,12 @@ index 0000000..e1e3c15
 +ci/variables.yml
 diff --git a/.travis.yml b/.travis.yml
 new file mode 100644
-index 0000000..f7c7f26
+index 0000000..b3dfd92
 --- /dev/null
 +++ b/.travis.yml
 @@ -0,0 +1,92 @@
 +dist: trusty
-+sudo: false
++sudo: required
 +notifications:
 +  email: false
 +env:
